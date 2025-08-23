@@ -1,0 +1,227 @@
+{
+  "info": {
+    "name": "CarRentalApp",
+    "_postman_id": "12345678-aaaa-bbbb-cccc-1234567890ab",
+    "description": "Phase 1 backend API requests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"123456\",\n  \"phone\": \"09171234567\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth","register"]
+        }
+      }
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth","login"]
+        }
+      }
+    },
+    {
+      "name": "Get All Cars",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/cars",
+          "host": ["{{baseUrl}}"],
+          "path": ["cars"]
+        }
+      }
+    },
+    {
+      "name": "Get Car By ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/cars/{{carId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["cars","{{carId}}"]
+        }
+      }
+    },
+    {
+      "name": "Add Car",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"make\": \"Toyota\",\n  \"model\": \"Corolla\",\n  \"year\": 2023,\n  \"licensePlate\": \"ABC123\",\n  \"pricePerDay\": 1500\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cars",
+          "host": ["{{baseUrl}}"],
+          "path": ["cars"]
+        }
+      }
+    },
+    {
+      "name": "Update Car",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pricePerDay\": 1600\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cars/{{carId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["cars","{{carId}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete Car",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/cars/{{carId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["cars","{{carId}}"]
+        }
+      }
+    },
+    {
+      "name": "Create Booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"carId\": \"{{carId}}\",\n  \"startDate\": \"2025-09-01\",\n  \"endDate\": \"2025-09-05\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/bookings",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings"]
+        }
+      }
+    },
+    {
+      "name": "Get User Bookings",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/bookings/user/{{userId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings","user","{{userId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Booking",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"confirmed\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings","{{bookingId}}"]
+        }
+      }
+    },
+    {
+      "name": "Cancel Booking",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings","{{bookingId}}"]
+        }
+      }
+    }
+  ]
+}
