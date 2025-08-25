@@ -4,22 +4,17 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const carRoutes = require('./routes/carRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
-const cors = require('cors'); // 👈 import cors
+const cors = require('cors');
 const Booking = require('./models/Booking');
 
 dotenv.config();
-connectDB();
+connectDB(); // ✅ uncomment this
 
 const app = express();
 app.use(express.json());
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
-// 👈 Enable CORS for frontend
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true
-}));
-
-// --- Temporary test route ---
+// Test route
 app.get('/api/bookings/test', async (req, res) => {
   try {
     const bookings = await Booking.find()
@@ -30,7 +25,6 @@ app.get('/api/bookings/test', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// --- End temporary route ---
 
 // Routes
 app.use('/api/auth', authRoutes);
