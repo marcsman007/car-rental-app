@@ -2,23 +2,27 @@ const express = require('express');
 const {
   createBooking,
   getUserBookings,
+  getAllBookings,
   updateBooking,
   deleteBooking
 } = require('../controllers/bookingController');
 
-const { protect } = require('../middlewares/authMiddleware');
+const { protect, admin } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
-// Create a new booking
+// Create a new booking (user)
 router.post('/', protect, createBooking);
 
-// ✅ Updated route to match frontend
+// Get bookings for logged-in user
 router.get('/mybookings', protect, getUserBookings);
 
-// Update a booking by ID
-router.patch('/:id', protect, updateBooking);
+// Get all bookings (admin only)
+router.get('/', protect, admin, getAllBookings);
 
-// Cancel (delete) a booking by ID
+// Update a booking by ID (admin only for status update)
+router.patch('/:id', protect, admin, updateBooking);
+
+// Cancel a booking by ID (user can cancel own booking, admin can cancel any)
 router.delete('/:id', protect, deleteBooking);
 
 module.exports = router;

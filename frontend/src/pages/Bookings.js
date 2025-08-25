@@ -25,7 +25,9 @@ const Bookings = () => {
       const canceledBooking = res.data.booking;
       setUserBookings(
         userBookings.map(b =>
-          b._id === bookingId ? { ...b, status: canceledBooking.status, canceledAt: canceledBooking.canceledAt } : b
+          b._id === bookingId
+            ? { ...b, status: canceledBooking.status, canceledAt: canceledBooking.canceledAt }
+            : b
         )
       );
     } catch (err) {
@@ -55,10 +57,12 @@ const Bookings = () => {
               <p>Total Price: ₱{b.totalPrice}</p>
               <p>Status: {b.status}</p>
 
+              {/* Show canceled date if applicable */}
               {b.status === 'canceled' && b.canceledAt && (
                 <p>Cancelled on: {new Date(b.canceledAt).toLocaleString()}</p>
               )}
 
+              {/* Cancel button only if not canceled */}
               {b.status !== 'canceled' && (
                 <button
                   onClick={() => handleCancelBooking(b._id)}

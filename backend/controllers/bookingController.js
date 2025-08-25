@@ -94,14 +94,14 @@ const updateBooking = async (req, res) => {
   }
 };
 
-// Cancel booking (soft cancel)
+// Cancel booking (soft cancel) - owner or admin
 const deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    // Ownership check
-    if (booking.user.toString() !== req.user._id.toString()) {
+    // Allow booking owner or admin to cancel
+    if (booking.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to cancel this booking' });
     }
 
