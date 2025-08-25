@@ -12,14 +12,22 @@ const Bookings = () => {
     if (!window.confirm("Are you sure you want to cancel this booking?")) return;
 
     try {
-      const token = localStorage.getItem('token'); // adjust if you store JWT elsewhere
-      await axios.delete(`/api/bookings/${bookingId}`, {
+      const token = localStorage.getItem('token');
+
+      const res = await axios.delete(`/api/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
 
-      // Remove canceled booking from local state
-      setUserBookings(userBookings.filter(b => b._id !== bookingId));
-      alert('Booking canceled successfully');
+      alert(res.data.message || 'Booking canceled successfully');
+
+      // Soft cancel: update booking status and canceledAt
+      const canceledBooking = res.data.booking;
+      setUserBookings(
+        userBookings.map(b =>
+          b._id === bookingId ? { ...b, status: canceledBooking.status, canceledAt: canceledBooking.canceledAt } : b
+        )
+      );
     } catch (err) {
       console.error(err);
       alert('Failed to cancel booking');
@@ -30,7 +38,15 @@ const Bookings = () => {
     <div>
       <h2>My Bookings</h2>
       {userBookings.map((b) => (
-        <div key={b._id} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px' }}>
+        <div
+          key={b._id}
+          style={{
+            border: '1px solid #ccc',
+            margin: '10px',
+            padding: '10px',
+            opacity: b.status === 'canceled' ? 0.6 : 1
+          }}
+        >
           {b.car ? (
             <>
               <h3>{b.car.make} {b.car.model}</h3>
@@ -38,7 +54,11 @@ const Bookings = () => {
               <p>To: {new Date(b.endDate).toLocaleDateString()}</p>
               <p>Total Price: ₱{b.totalPrice}</p>
               <p>Status: {b.status}</p>
-              {/* Cancel button */}
+
+              {b.status === 'canceled' && b.canceledAt && (
+                <p>Cancelled on: {new Date(b.canceledAt).toLocaleString()}</p>
+              )}
+
               {b.status !== 'canceled' && (
                 <button
                   onClick={() => handleCancelBooking(b._id)}
@@ -48,7 +68,9 @@ const Bookings = () => {
                 </button>
               )}
             </>
-          ) : <p>Car info not available</p>}
+          ) : (
+            <p>Car info not available</p>
+          )}
         </div>
       ))}
     </div>

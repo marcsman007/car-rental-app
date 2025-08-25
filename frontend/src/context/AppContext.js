@@ -19,7 +19,7 @@ export const AppProvider = ({ children }) => {
   };
   const role = parseJwt(token)?.role;
 
-  // ✅ fetchCars wrapped in useCallback
+  // Fetch cars
   const fetchCars = useCallback(async () => {
     try {
       const res = await API.get("/cars");
@@ -29,7 +29,7 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // ✅ fetchUserBookings wrapped in useCallback
+  // Fetch user bookings (including canceled for history)
   const fetchUserBookings = useCallback(async () => {
     if (role === "user" && token) {
       try {
@@ -43,7 +43,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [role, token]);
 
-  // ✅ New function to handle booking and update context
+  // Book a car
   const bookCar = async (carId, startDate, endDate) => {
     try {
       const res = await API.post(
@@ -56,10 +56,7 @@ export const AppProvider = ({ children }) => {
 
       const newBooking = res.data;
 
-      // remove car from available cars
-      setCars((prevCars) => prevCars.filter((c) => c._id !== carId));
-
-      // add booking to userBookings
+      // Add booking to userBookings
       setUserBookings((prevBookings) => [...prevBookings, newBooking]);
 
       return newBooking;
@@ -69,7 +66,27 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // ✅ include dependencies in useEffect
+  // Cancel (soft cancel) a booking
+  const cancelBooking = async (bookingId) => {
+    try {
+      const res = await API.delete(`/bookings/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Update booking status to canceled in context
+      setUserBookings((prevBookings) =>
+        prevBookings.map((b) =>
+          b._id === bookingId ? { ...b, status: "canceled", canceledAt: new Date() } : b
+        )
+      );
+
+      return res.data;
+    } catch (err) {
+      console.error("Error canceling booking:", err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchCars();
     fetchUserBookings();
@@ -86,6 +103,7 @@ export const AppProvider = ({ children }) => {
         fetchCars,
         fetchUserBookings,
         bookCar,
+        cancelBooking, // ✅ new function
         role,
         loading,
       }}

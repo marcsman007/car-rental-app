@@ -9,9 +9,10 @@ const createBooking = async (req, res) => {
     const car = await Car.findById(carId);
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
-    // Check overlapping bookings
+    // Check overlapping active bookings only
     const overlappingBooking = await Booking.findOne({
       car: carId,
+      status: { $in: ['pending', 'confirmed'] }, // only active bookings
       $or: [
         { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } }
       ]
@@ -37,7 +38,6 @@ const createBooking = async (req, res) => {
     car.available = false;
     await car.save();
 
-    // Populate booking for frontend
     const populatedBooking = await Booking.findById(booking._id)
       .populate('user', 'name email role')
       .populate('car');
@@ -53,7 +53,7 @@ const createBooking = async (req, res) => {
 const getUserBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user._id })
-      .populate('car'); // populate car info
+      .populate('car');
     res.json(bookings);
   } catch (err) {
     console.error(err);
@@ -94,21 +94,37 @@ const updateBooking = async (req, res) => {
   }
 };
 
-// Cancel booking
+// Cancel booking (soft cancel)
 const deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    // Make car available again
-    const car = await Car.findById(booking.car);
-    if (car) {
-      car.available = true;
-      await car.save();
+    // Ownership check
+    if (booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to cancel this booking' });
     }
 
-    await booking.deleteOne();
-    res.json({ message: 'Booking cancelled' });
+    // Soft cancel
+    booking.status = 'canceled';
+    booking.canceledAt = new Date();
+    await booking.save();
+
+    // Make the car available only if no other active bookings exist
+    const otherActiveBooking = await Booking.findOne({
+      car: booking.car,
+      status: { $in: ['pending', 'confirmed'] }
+    });
+
+    if (!otherActiveBooking) {
+      const car = await Car.findById(booking.car);
+      if (car) {
+        car.available = true;
+        await car.save();
+      }
+    }
+
+    res.json({ message: 'Booking canceled successfully', booking });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Failed to cancel booking' });
