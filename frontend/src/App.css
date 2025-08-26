@@ -1,143 +1,113 @@
-/* ===== Original App styles ===== */
-.App {
-  text-align: center;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
+/* ===== Original App animations ===== */
 @keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Optional: global animation class ===== */
+.animate-spin-slow {
+  animation: App-logo-spin 20s linear infinite;
 }
 
 /* ===== Global styles ===== */
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background-color: #f4f4f4;
+  @apply font-sans m-0 bg-gray-100;
 }
 
 /* ===== Navbar ===== */
 nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  background-color: #333;
-  color: white;
+  @apply flex justify-between items-center p-4 bg-gray-800 text-white;
 }
 
 nav h2 {
-  margin: 0;
+  @apply m-0;
 }
 
-nav div a, nav div button {
-  margin-right: 10px;
-  text-decoration: none;
+nav div a,
+nav div button {
+  @apply mr-2 no-underline;
 }
 
 nav div button {
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 
-nav div button:hover, nav div a:hover {
-  opacity: 0.8;
+nav div a:hover,
+nav div button:hover {
+  @apply opacity-80;
 }
 
 /* ===== Container layout ===== */
 .container {
-  max-width: 900px;
-  margin: 20px auto;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  @apply max-w-3xl mx-auto my-5 p-5 bg-white rounded-lg shadow;
 }
 
 /* ===== Headings ===== */
 h2, h3 {
-  margin-bottom: 15px;
+  @apply mb-4;
 }
 
 /* ===== Forms ===== */
 form input,
 form select,
 form button {
-  display: block;
-  margin-bottom: 10px;
-  padding: 8px;
-  width: 100%;
-  max-width: 400px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+  @apply block w-full max-w-md p-2 mb-2 rounded border border-gray-300;
 }
 
 form button {
-  background-color: #333;
-  color: white;
-  border: none;
-  cursor: pointer;
+  @apply bg-gray-800 text-white border-none cursor-pointer;
 }
 
 form button:hover {
-  background-color: #555;
+  @apply bg-gray-700;
 }
 
 /* ===== Lists ===== */
 ul {
-  list-style: none;
-  padding: 0;
+  @apply list-none p-0;
 }
 
 ul li {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  @apply flex justify-between items-center border-b border-gray-300 py-2;
 }
 
 ul li:last-child {
-  border-bottom: none;
+  @apply border-b-0;
 }
 
+/* ===== Cancel button ===== */
 button.cancel-btn {
-  background-color: red;
-  color: white;
-  border: none;
-  padding: 5px 8px;
-  border-radius: 4px;
-  cursor: pointer;
+  @apply bg-red-600 text-white rounded px-2 py-1 border-none cursor-pointer;
 }
 
 button.cancel-btn:hover {
-  opacity: 0.8;
+  @apply opacity-80;
+}
+
+/* ===== App Logo & Header ===== */
+.App {
+  @apply text-center;
+}
+
+.App-logo {
+  @apply pointer-events-none h-[40vmin];
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    @apply animate-spin-slow;
+  }
+}
+
+.App-header {
+  @apply bg-gray-900 min-h-screen flex flex-col items-center justify-center text-white;
+  font-size: calc(10px + 2vmin);
+}
+
+.App-link {
+  @apply text-blue-400;
 }

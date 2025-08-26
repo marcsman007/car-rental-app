@@ -1,87 +1,97 @@
 const Car = require('../models/Car');
 const Booking = require('../models/Booking');
 
-// Get all cars
+// --- GET all cars ---
 const getCars = async (req, res) => {
   try {
     const cars = await Car.find();
     res.json(cars);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching cars:", err);
     res.status(500).json({ message: "Failed to fetch cars" });
   }
 };
 
-// Add new car (admin)
+// --- ADD new car (admin only) ---
 const addCar = async (req, res) => {
   try {
-    const car = await Car.create(req.body);
+    const { make, model, year, licensePlate, pricePerDay } = req.body;
+
+    const car = await Car.create({
+      make,
+      model,
+      year: Number(year),
+      licensePlate,
+      pricePerDay: Number(pricePerDay),
+      reviews: [],
+      numReviews: 0,
+      averageRating: 0,
+    });
+
+    console.log("Car added:", car);
     res.status(201).json(car);
   } catch (err) {
-    console.error(err);
+    console.error("Error adding car:", err);
     res.status(500).json({ message: "Failed to add car" });
   }
 };
 
-// Update car (admin)
+// --- UPDATE car (admin only) ---
 const updateCar = async (req, res) => {
   try {
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    // Prevent editing licensePlate if booked
+    // Prevent changing licensePlate if booked
     const activeBooking = await Booking.findOne({
       car: car._id,
       status: { $in: ["pending", "confirmed"] }
     });
-    if (
-      activeBooking &&
-      req.body.licensePlate &&
-      req.body.licensePlate !== car.licensePlate
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Cannot change license plate while car is booked" });
+    if (activeBooking && req.body.licensePlate && req.body.licensePlate !== car.licensePlate) {
+      return res.status(400).json({ message: "Cannot change license plate while car is booked" });
     }
+
+    // Convert numeric fields
+    if (req.body.year !== undefined) req.body.year = Number(req.body.year);
+    if (req.body.pricePerDay !== undefined) req.body.pricePerDay = Number(req.body.pricePerDay);
 
     Object.assign(car, req.body);
     const updatedCar = await car.save();
+
+    console.log("Car updated:", updatedCar);
     res.json(updatedCar);
   } catch (err) {
-    console.error(err);
+    console.error("Error updating car:", err);
     res.status(500).json({ message: "Failed to update car" });
   }
 };
 
-// Delete car (admin)
+// --- DELETE car (admin only) ---
 const deleteCar = async (req, res) => {
   try {
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    // Prevent deleting if car is booked
     const activeBooking = await Booking.findOne({
       car: car._id,
       status: { $in: ["pending", "confirmed"] }
     });
-    if (activeBooking)
-      return res
-        .status(400)
-        .json({ message: "Cannot delete a car that is currently booked" });
+    if (activeBooking) {
+      return res.status(400).json({ message: "Cannot delete a car that is currently booked" });
+    }
 
     await car.deleteOne();
+    console.log("Car deleted:", car._id);
     res.json({ message: "Car deleted" });
   } catch (err) {
-    console.error(err);
+    console.error("Error deleting car:", err);
     res.status(500).json({ message: "Failed to delete car" });
   }
 };
 
-// ⭐ Add a review for a car (crash-proof with debug logs)
+// --- ADD a review for a car (any logged-in user) ---
 const addCarReview = async (req, res) => {
   try {
-    console.log("Request user:", req.user); // Debug log
-
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Not authorized" });
     }
@@ -89,19 +99,14 @@ const addCarReview = async (req, res) => {
     const { rating, comment } = req.body;
     const car = await Car.findById(req.params.id);
 
-    if (!car) {
-      return res.status(404).json({ message: "Car not found" });
-    }
+    if (!car) return res.status(404).json({ message: "Car not found" });
 
-    if (!car.reviews) car.reviews = []; // Ensure reviews array exists
-    console.log("Existing reviews:", car.reviews); // Debug log
+    if (!Array.isArray(car.reviews)) car.reviews = [];
 
     const alreadyReviewed = car.reviews.find(
-      (r) => r.user.toString() === req.user._id.toString()
+      r => r.user.toString() === req.user._id.toString()
     );
-
     if (alreadyReviewed) {
-      console.log("Duplicate review detected for user:", req.user._id);
       return res.status(400).json({ message: "You have already reviewed this car" });
     }
 
@@ -114,11 +119,10 @@ const addCarReview = async (req, res) => {
 
     car.reviews.push(review);
     car.numReviews = car.reviews.length;
-    car.averageRating =
-      car.reviews.reduce((acc, r) => acc + r.rating, 0) / car.reviews.length;
+    car.averageRating = car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length;
 
     await car.save();
-    console.log("Review saved:", review); // Debug log
+    console.log("Review added:", review);
 
     res.status(201).json({ message: "Review added", review });
   } catch (err) {
