@@ -2,7 +2,7 @@
   "info": {
     "name": "CarRentalApp",
     "_postman_id": "12345678-aaaa-bbbb-cccc-1234567890ab",
-    "description": "Phase 1 backend API requests",
+    "description": "Phase 1 backend API requests with review endpoint",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -11,10 +11,7 @@
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
@@ -32,10 +29,7 @@
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
@@ -77,14 +71,8 @@
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
@@ -102,14 +90,8 @@
       "request": {
         "method": "PATCH",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
@@ -127,10 +109,7 @@
       "request": {
         "method": "DELETE",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "url": {
           "raw": "{{baseUrl}}/cars/{{carId}}",
@@ -140,18 +119,31 @@
       }
     },
     {
+      "name": "Add Car Review",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Very smooth ride, highly recommend!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cars/{{carId}}/reviews",
+          "host": ["{{baseUrl}}"],
+          "path": ["cars","{{carId}}","reviews"]
+        }
+      }
+    },
+    {
       "name": "Create Booking",
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
@@ -169,10 +161,7 @@
       "request": {
         "method": "GET",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "url": {
           "raw": "{{baseUrl}}/bookings/user/{{userId}}",
@@ -186,14 +175,8 @@
       "request": {
         "method": "PATCH",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "body": {
           "mode": "raw",
@@ -211,10 +194,7 @@
       "request": {
         "method": "DELETE",
         "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "url": {
           "raw": "{{baseUrl}}/bookings/{{bookingId}}",

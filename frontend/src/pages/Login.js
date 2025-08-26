@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { AppContext } from "../context/AppContext";
 
 function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useContext(AppContext); // ✅ access global state
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,7 +31,7 @@ function Login() {
       // Save token
       localStorage.setItem("token", res.data.token);
 
-      // Decode JWT to check role
+      // Decode JWT to get user info
       const parseJwt = (token) => {
         try {
           return JSON.parse(atob(token.split(".")[1]));
@@ -44,6 +46,9 @@ function Login() {
         setMessage("Failed to decode token ❌");
         return;
       }
+
+      // ✅ Update global state so UI re-renders immediately
+      setUser(user);
 
       setMessage("Login successful ✅ Redirecting...");
 

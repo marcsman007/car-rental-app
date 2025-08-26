@@ -7,6 +7,7 @@ export const AppProvider = ({ children }) => {
   const [cars, setCars] = useState([]);
   const [userBookings, setUserBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null); // ✅ track logged-in user
 
   const token = localStorage.getItem("token");
 
@@ -17,7 +18,16 @@ export const AppProvider = ({ children }) => {
       return null;
     }
   };
-  const role = parseJwt(token)?.role;
+
+  // Update user on mount if token exists
+  useEffect(() => {
+    if (token) {
+      const decodedUser = parseJwt(token);
+      if (decodedUser) setUser(decodedUser);
+    }
+  }, [token]);
+
+  const role = user?.role || null;
 
   // Fetch cars
   const fetchCars = useCallback(async () => {
@@ -49,16 +59,11 @@ export const AppProvider = ({ children }) => {
       const res = await API.post(
         "/bookings",
         { carId, startDate, endDate },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const newBooking = res.data;
-
-      // Add booking to userBookings
       setUserBookings((prevBookings) => [...prevBookings, newBooking]);
-
       return newBooking;
     } catch (err) {
       console.error("Error creating booking:", err);
@@ -73,7 +78,6 @@ export const AppProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Update booking status to canceled in context
       setUserBookings((prevBookings) =>
         prevBookings.map((b) =>
           b._id === bookingId ? { ...b, status: "canceled", canceledAt: new Date() } : b
@@ -96,6 +100,8 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider
       value={{
+        user, // ✅ expose user state
+        setUser, // ✅ expose setUser for Login.js
         cars,
         setCars,
         userBookings,
@@ -103,7 +109,7 @@ export const AppProvider = ({ children }) => {
         fetchCars,
         fetchUserBookings,
         bookCar,
-        cancelBooking, // ✅ new function
+        cancelBooking,
         role,
         loading,
       }}

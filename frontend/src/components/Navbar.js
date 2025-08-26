@@ -1,23 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext";
 
 function Navbar() {
-  const token = localStorage.getItem("token");
+  const { user, setUser } = useContext(AppContext);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    setUser(null); // ✅ update context
+    navigate("/login");
   };
-
-  // Decode JWT to get user role
-  const parseJwt = (token) => {
-    try {
-      return JSON.parse(atob(token.split(".")[1]));
-    } catch (e) {
-      return null;
-    }
-  };
-  const user = parseJwt(token);
-  const role = user?.role;
 
   return (
     <nav style={{ padding: "10px", background: "#333", color: "white" }}>
@@ -25,15 +18,17 @@ function Navbar() {
       <div style={{ marginTop: "10px" }}>
         <Link to="/" style={{ marginRight: "10px", color: "white" }}>Home</Link>
 
-        {token ? (
+        {!user && (
+          <>
+            <Link to="/login" style={{ marginRight: "10px", color: "white" }}>Login</Link>
+            <Link to="/register" style={{ marginRight: "10px", color: "white" }}>Register</Link>
+          </>
+        )}
+
+        {user && user.role === "user" && (
           <>
             <Link to="/cars" style={{ marginRight: "10px", color: "white" }}>Cars</Link>
             <Link to="/bookings" style={{ marginRight: "10px", color: "white" }}>Bookings</Link>
-
-            {role === "admin" && (
-              <Link to="/admin" style={{ marginRight: "10px", color: "white" }}>Admin Dashboard</Link>
-            )}
-
             <button 
               onClick={handleLogout} 
               style={{ color: "white", background: "red", border: "none", padding: "5px" }}
@@ -41,10 +36,17 @@ function Navbar() {
               Logout
             </button>
           </>
-        ) : (
+        )}
+
+        {user && user.role === "admin" && (
           <>
-            <Link to="/login" style={{ marginRight: "10px", color: "white" }}>Login</Link>
-            <Link to="/register" style={{ marginRight: "10px", color: "white" }}>Register</Link>
+            <Link to="/admin" style={{ marginRight: "10px", color: "white" }}>Admin Dashboard</Link>
+            <button 
+              onClick={handleLogout} 
+              style={{ color: "white", background: "red", border: "none", padding: "5px" }}
+            >
+              Logout
+            </button>
           </>
         )}
       </div>

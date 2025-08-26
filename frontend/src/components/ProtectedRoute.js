@@ -1,28 +1,18 @@
+import { useContext } from "react";
 import { Navigate } from "react-router-dom";
+import { AppContext } from "../context/AppContext";
 
 function ProtectedRoute({ children, adminOnly = false }) {
-  const token = localStorage.getItem("token");
+  const { user, role, loading } = useContext(AppContext);
 
-  if (!token) {
-    // Not logged in
-    return <Navigate to="/login" replace />;
-  }
+  // Show nothing or loader while checking login
+  if (loading) return <div>Loading...</div>;
 
-  // Decode JWT to get user role
-  const parseJwt = (token) => {
-    try {
-      return JSON.parse(atob(token.split(".")[1]));
-    } catch (e) {
-      return null;
-    }
-  };
+  // Not logged in
+  if (!user) return <Navigate to="/login" replace />;
 
-  const user = parseJwt(token);
-
-  if (adminOnly && user?.role !== "admin") {
-    // Not an admin
-    return <Navigate to="/" replace />;
-  }
+  // Admin-only route
+  if (adminOnly && role !== "admin") return <Navigate to="/" replace />;
 
   return children;
 }
