@@ -7,7 +7,7 @@ export const AppProvider = ({ children }) => {
   const [cars, setCars] = useState([]);
   const [userBookings, setUserBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null); // ✅ track logged-in user
+  const [user, setUser] = useState(null);
 
   const token = localStorage.getItem("token");
 
@@ -91,17 +91,23 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Load data and update loading state
   useEffect(() => {
-    fetchCars();
-    fetchUserBookings();
-    setLoading(false);
+    const loadData = async () => {
+      setLoading(true);
+      await fetchCars();
+      await fetchUserBookings();
+      setLoading(false);
+    };
+
+    loadData();
   }, [fetchCars, fetchUserBookings]);
 
   return (
     <AppContext.Provider
       value={{
-        user, // ✅ expose user state
-        setUser, // ✅ expose setUser for Login.js
+        user,
+        setUser,
         cars,
         setCars,
         userBookings,

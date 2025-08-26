@@ -1,39 +1,20 @@
 import React, { useContext } from "react";
 import { AppContext } from "../context/AppContext";
-import axios from "axios";
 
-const Bookings = () => {
-  const { userBookings, setUserBookings, loading } = useContext(AppContext);
+function Bookings() {
+  const { userBookings, cancelBooking, loading } = useContext(AppContext);
 
-  if (loading)
-    return <p className="text-center text-gray-600">Loading your bookings...</p>;
-  if (userBookings.length === 0)
-    return <p className="text-center text-gray-600">You have no bookings yet.</p>;
+  if (loading) return <p className="text-center text-gray-600 mt-6">Loading your bookings...</p>;
+  if (userBookings.length === 0) return <p className="text-center text-gray-600 mt-6">You have no bookings yet.</p>;
 
-  const handleCancelBooking = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
-
+  const handleCancel = async (id) => {
+    if (!window.confirm("Cancel this booking?")) return;
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await axios.delete(`/api/bookings/${bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
-
-      alert(res.data.message || "Booking canceled successfully");
-
-      const canceledBooking = res.data.booking;
-      setUserBookings(
-        userBookings.map((b) =>
-          b._id === bookingId
-            ? { ...b, status: canceledBooking.status, canceledAt: canceledBooking.canceledAt }
-            : b
-        )
-      );
+      await cancelBooking(id);
+      alert("Booking cancelled ✅");
     } catch (err) {
       console.error(err);
-      alert("Failed to cancel booking");
+      alert("Failed to cancel booking ❌");
     }
   };
 
@@ -65,16 +46,14 @@ const Bookings = () => {
                 <p>
                   <strong>Status:</strong> {b.status}
                 </p>
-
                 {b.status === "canceled" && b.canceledAt && (
                   <p>
                     <strong>Cancelled on:</strong> {new Date(b.canceledAt).toLocaleString()}
                   </p>
                 )}
-
                 {b.status !== "canceled" && (
                   <button
-                    onClick={() => handleCancelBooking(b._id)}
+                    onClick={() => handleCancel(b._id)}
                     className="mt-2 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                   >
                     Cancel Booking
@@ -89,6 +68,6 @@ const Bookings = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Bookings;
