@@ -6,6 +6,7 @@ const carRoutes = require('./routes/carRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const cors = require('cors');
 const Booking = require('./models/Booking');
+const path = require("path");
 
 dotenv.config();
 connectDB(); // ✅ uncomment this
