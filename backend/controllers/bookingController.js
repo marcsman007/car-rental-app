@@ -162,10 +162,50 @@ const deleteBooking = async (req, res) => {
   }
 };
 
+// --- FULFILL booking ---
+const fulfillBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({ message: 'Only confirmed bookings can be fulfilled' });
+    }
+
+    booking.status = 'fulfilled';
+    booking.fulfilledAt = new Date();
+    await booking.save();
+
+    // Make car available if no other active bookings exist
+    const otherActive = await Booking.findOne({
+      car: booking.car,
+      status: { $in: ['pending', 'confirmed'] }
+    });
+    if (!otherActive) {
+      const car = await Car.findById(booking.car);
+      if (car) {
+        car.available = true;
+        await car.save();
+      }
+    }
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('user', 'name email role')
+      .populate('car');
+
+    console.log('Booking fulfilled:', populatedBooking._id);
+    res.json({ message: 'Booking fulfilled successfully', booking: populatedBooking });
+  } catch (err) {
+    console.error('Error fulfilling booking:', err);
+    res.status(500).json({ message: 'Failed to fulfill booking' });
+  }
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
   getAllBookings,
   updateBooking,
-  deleteBooking
+  deleteBooking,
+  fulfillBooking
 };

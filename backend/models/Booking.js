@@ -8,10 +8,11 @@ const bookingSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'canceled'], // ✅ include 'canceled'
+    enum: ['pending', 'confirmed', 'canceled', 'fulfilled'], // added 'fulfilled'
     default: 'pending' 
   },
-  canceledAt: { type: Date } // optional timestamp
+  canceledAt: { type: Date },    // optional timestamp
+  fulfilledAt: { type: Date }    // added to track when a booking is fulfilled
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

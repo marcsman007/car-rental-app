@@ -19,7 +19,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Update user on mount if token exists
   useEffect(() => {
     if (token) {
       const decodedUser = parseJwt(token);
@@ -29,7 +28,6 @@ export const AppProvider = ({ children }) => {
 
   const role = user?.role || null;
 
-  // Fetch cars
   const fetchCars = useCallback(async () => {
     try {
       const res = await API.get("/cars");
@@ -39,7 +37,6 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch user bookings (including canceled for history)
   const fetchUserBookings = useCallback(async () => {
     if (role === "user" && token) {
       try {
@@ -53,7 +50,6 @@ export const AppProvider = ({ children }) => {
     }
   }, [role, token]);
 
-  // Book a car
   const bookCar = async (carId, startDate, endDate) => {
     try {
       const res = await API.post(
@@ -63,7 +59,7 @@ export const AppProvider = ({ children }) => {
       );
 
       const newBooking = res.data;
-      setUserBookings((prevBookings) => [...prevBookings, newBooking]);
+      setUserBookings((prev) => [...prev, newBooking]);
       return newBooking;
     } catch (err) {
       console.error("Error creating booking:", err);
@@ -71,15 +67,14 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Cancel (soft cancel) a booking
   const cancelBooking = async (bookingId) => {
     try {
       const res = await API.delete(`/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setUserBookings((prevBookings) =>
-        prevBookings.map((b) =>
+      setUserBookings((prev) =>
+        prev.map((b) =>
           b._id === bookingId ? { ...b, status: "canceled", canceledAt: new Date() } : b
         )
       );
@@ -91,7 +86,17 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Load data and update loading state
+  const updateBooking = (updatedBooking) => {
+    setUserBookings((prev) => {
+      const exists = prev.some((b) => b._id === updatedBooking._id);
+      if (exists) {
+        return prev.map((b) => (b._id === updatedBooking._id ? { ...b, ...updatedBooking } : b));
+      } else {
+        return [...prev, updatedBooking];
+      }
+    });
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -99,7 +104,6 @@ export const AppProvider = ({ children }) => {
       await fetchUserBookings();
       setLoading(false);
     };
-
     loadData();
   }, [fetchCars, fetchUserBookings]);
 
@@ -116,6 +120,7 @@ export const AppProvider = ({ children }) => {
         fetchUserBookings,
         bookCar,
         cancelBooking,
+        updateBooking,
         role,
         loading,
       }}
