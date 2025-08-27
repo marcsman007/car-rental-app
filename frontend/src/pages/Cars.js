@@ -9,8 +9,10 @@ function Cars() {
   const [message, setMessage] = useState("");
   const [reviewData, setReviewData] = useState({}); // { carId: { rating, comment } }
 
-  if (loading) return <p className="text-center text-gray-600 mt-6">Loading cars...</p>;
-  if (cars.length === 0) return <p className="text-center text-gray-600 mt-6">No cars available</p>;
+  if (loading)
+    return <p className="text-center text-gray-600 mt-6">Loading cars...</p>;
+  if (cars.length === 0)
+    return <p className="text-center text-gray-600 mt-6">No cars available</p>;
 
   const isCarBookedByUser = (carId) =>
     userBookings.some((booking) => booking.car._id === carId && booking.status !== "canceled");
@@ -59,7 +61,7 @@ function Cars() {
       );
       alert("Review submitted ✅");
       setReviewData({ ...reviewData, [carId]: { rating: "", comment: "" } });
-      fetchCars(); // refresh cars to include new review
+      fetchCars();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error submitting review ❌");
@@ -82,9 +84,10 @@ function Cars() {
   const maxRating = Math.max(...cars.map((c) => c.averageRating), 0);
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-3xl font-bold mb-6 text-center">Available Cars</h2>
-      <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="min-h-screen px-4 py-6 bg-gray-100">
+      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Available Cars</h2>
+
+      <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {cars
           .filter((car) => role === "admin" || isCarAvailable(car))
           .map((car) => {
@@ -97,22 +100,22 @@ function Cars() {
             return (
               <li
                 key={car._id}
-                className={`p-4 border rounded-lg shadow ${
+                className={`p-4 rounded-lg shadow border ${
                   available ? "border-green-400" : "border-red-400 opacity-60"
                 } ${car.averageRating === maxRating && maxRating > 0 ? "bg-yellow-50" : "bg-white"}`}
               >
-                <div className="flex flex-col gap-2">
-                  <span className="font-bold text-lg">
+                <div className="flex flex-col gap-3">
+                  <span className="font-bold text-lg text-gray-800">
                     {car.make} {car.model} | ₱{car.pricePerDay}/day{" "}
                     {(!available || bookedByUser) && "(Booked)"}
                   </span>
 
-                  <div>
+                  <div className="text-gray-600">
                     Avg Rating: {car.averageRating?.toFixed(1)} {renderStars(car.averageRating)}
                   </div>
 
                   {car.reviews?.length > 0 && (
-                    <div className="mt-2 pl-2">
+                    <div className="mt-2 pl-2 text-gray-700">
                       <strong>Reviews:</strong>
                       <ul className="list-disc pl-5">
                         {car.reviews.map((r) => (
@@ -127,7 +130,7 @@ function Cars() {
                   {role !== "admin" && available && !bookedByUser && (
                     <button
                       onClick={() => setBookingCarId(car._id)}
-                      className="mt-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                     >
                       Book Now
                     </button>
@@ -156,7 +159,7 @@ function Cars() {
                       <div className="flex gap-2">
                         <button
                           type="submit"
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
                         >
                           Confirm Booking
                         </button>
@@ -166,7 +169,7 @@ function Cars() {
                             setBookingCarId(null);
                             setBookingDates({ startDate: "", endDate: "" });
                           }}
-                          className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500"
+                          className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
                         >
                           Cancel
                         </button>
@@ -195,7 +198,7 @@ function Cars() {
                       <button
                         type="button"
                         onClick={() => submitReview(car._id)}
-                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                        className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
                       >
                         Submit Review
                       </button>
@@ -206,9 +209,10 @@ function Cars() {
             );
           })}
       </ul>
+
       {message && (
         <p
-          className={`mt-4 text-center ${
+          className={`mt-4 text-center font-medium ${
             message.includes("❌") ? "text-red-600" : "text-green-600"
           }`}
         >

@@ -3,16 +3,21 @@ import { Navigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 
 function ProtectedRoute({ children, adminOnly = false }) {
-  const { user, role, loading } = useContext(AppContext);
+  const { user, loading } = useContext(AppContext);
 
-  // Show nothing or loader while checking login
-  if (loading) return <div>Loading...</div>;
+  // Show loader while checking login status
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-orange-500"></div>
+      </div>
+    );
 
-  // Not logged in
+  // Redirect if not logged in
   if (!user) return <Navigate to="/login" replace />;
 
   // Admin-only route
-  if (adminOnly && role !== "admin") return <Navigate to="/" replace />;
+  if (adminOnly && user.role !== "admin") return <Navigate to="/" replace />;
 
   return children;
 }

@@ -7,7 +7,7 @@ function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
-  const { setUser } = useContext(AppContext); // ✅ access global state
+  const { setUser } = useContext(AppContext);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,7 +15,7 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage(""); // Reset previous messages
+    setMessage("");
 
     try {
       const emailTrimmed = formData.email.trim();
@@ -28,36 +28,27 @@ function Login() {
 
       const res = await API.post("/auth/login", { email: emailTrimmed, password });
 
-      // Save token
       localStorage.setItem("token", res.data.token);
 
-      // Decode JWT to get user info
       const parseJwt = (token) => {
         try {
           return JSON.parse(atob(token.split(".")[1]));
-        } catch (e) {
+        } catch {
           return null;
         }
       };
 
       const user = parseJwt(res.data.token);
-
       if (!user) {
         setMessage("Failed to decode token ❌");
         return;
       }
 
-      // ✅ Update global state so UI re-renders immediately
       setUser(user);
-
       setMessage("Login successful ✅ Redirecting...");
 
-      // Redirect based on role
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/cars");
-      }
+      if (user.role === "admin") navigate("/admin");
+      else navigate("/cars");
     } catch (err) {
       console.error("Login error:", err.response?.data || err);
       setMessage(err.response?.data?.message || "Invalid email or password ❌");
@@ -65,28 +56,41 @@ function Login() {
   };
 
   return (
-    <div className="container">
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
-      {message && <p>{message}</p>}
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 sm:px-6 lg:px-8">
+      <div className="bg-white shadow-md rounded-lg p-8 max-w-md w-full">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
+        {message && (
+          <p className={`mb-4 text-center ${message.includes("❌") ? "text-red-600" : "text-green-600"}`}>
+            {message}
+          </p>
+        )}
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Login
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

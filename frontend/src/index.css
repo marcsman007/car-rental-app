@@ -1,13 +1,104 @@
+/* ========================== */
+/* Tailwind Directives        */
+/* ========================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================== */
+/* Global Styles              */
+/* ========================== */
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  @apply m-0 font-sans bg-gray-100 text-gray-900;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* ========================== */
+/* Optional: App Animations   */
+/* ========================== */
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: App-logo-spin 20s linear infinite;
+}
+
+/* ========================== */
+/* Optional: Container Layout */
+/* ========================== */
+.container {
+  @apply max-w-3xl mx-auto my-5 p-5 bg-white rounded-lg shadow;
+}
+
+/* Headings */
+h2, h3 {
+  @apply mb-4;
+}
+
+/* Forms */
+form input,
+form select,
+form button {
+  @apply block w-full max-w-md p-2 mb-2 rounded border border-gray-300;
+}
+
+form button {
+  @apply bg-gray-800 text-white border-none cursor-pointer;
+}
+
+form button:hover {
+  @apply bg-gray-700;
+}
+
+/* Lists */
+ul {
+  @apply list-none p-0;
+}
+
+ul li {
+  @apply flex justify-between items-center border-b border-gray-300 py-2;
+}
+
+ul li:last-child {
+  @apply border-b-0;
+}
+
+/* Cancel Button */
+button.cancel-btn {
+  @apply bg-red-600 text-white rounded px-2 py-1 border-none cursor-pointer;
+}
+
+button.cancel-btn:hover {
+  @apply opacity-80;
+}
+
+/* App Logo & Header */
+.App {
+  @apply text-center;
+}
+
+.App-logo {
+  @apply pointer-events-none h-[40vmin];
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    @apply animate-spin-slow;
+  }
+}
+
+.App-header {
+  @apply bg-gray-900 min-h-screen flex flex-col items-center justify-center text-white;
+  font-size: calc(10px + 2vmin);
+}
+
+.App-link {
+  @apply text-blue-400;
 }

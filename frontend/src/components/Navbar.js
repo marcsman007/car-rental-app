@@ -8,30 +8,40 @@ function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setUser(null); // ✅ update context
+    setUser(null);
     navigate("/login");
   };
 
   return (
-    <nav style={{ padding: "10px", background: "#333", color: "white" }}>
-      <h2>Car Rental App 🚗</h2>
-      <div style={{ marginTop: "10px" }}>
-        <Link to="/" style={{ marginRight: "10px", color: "white" }}>Home</Link>
+    <nav className="bg-black text-orange-500 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      {/* Logo / Title */}
+      <h2 className="flex items-center text-4xl font-bold">
+        <span className="align-middle translate-y-3">CARUMA</span>
+        <span className="ml-2 flex text-[7rem] leading-none">
+          <span className="inline-block -mr-1">›</span>
+          <span className="inline-block -mr-1">›</span>
+          <span className="inline-block">›</span>
+        </span>
+      </h2>
+
+      {/* Navigation Links */}
+      <div className="mt-3 sm:mt-0 flex flex-wrap items-center gap-4">
+        <Link to="/" className="hover:text-white transition">Home</Link>
 
         {!user && (
           <>
-            <Link to="/login" style={{ marginRight: "10px", color: "white" }}>Login</Link>
-            <Link to="/register" style={{ marginRight: "10px", color: "white" }}>Register</Link>
+            <Link to="/login" className="hover:text-white transition">Login</Link>
+            <Link to="/register" className="hover:text-white transition">Register</Link>
           </>
         )}
 
         {user && user.role === "user" && (
           <>
-            <Link to="/cars" style={{ marginRight: "10px", color: "white" }}>Cars</Link>
-            <Link to="/bookings" style={{ marginRight: "10px", color: "white" }}>Bookings</Link>
+            <Link to="/cars" className="hover:text-white transition">Cars</Link>
+            <Link to="/bookings" className="hover:text-white transition">Bookings</Link>
             <button 
               onClick={handleLogout} 
-              style={{ color: "white", background: "red", border: "none", padding: "5px" }}
+              className="text-black bg-orange-500 px-3 py-1 rounded hover:bg-orange-600 transition"
             >
               Logout
             </button>
@@ -40,10 +50,10 @@ function Navbar() {
 
         {user && user.role === "admin" && (
           <>
-            <Link to="/admin" style={{ marginRight: "10px", color: "white" }}>Admin Dashboard</Link>
+            <Link to="/admin" className="hover:text-white transition">Admin Dashboard</Link>
             <button 
               onClick={handleLogout} 
-              style={{ color: "white", background: "red", border: "none", padding: "5px" }}
+              className="text-black bg-orange-500 px-3 py-1 rounded hover:bg-orange-600 transition"
             >
               Logout
             </button>
