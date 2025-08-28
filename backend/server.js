@@ -38,13 +38,12 @@ app.use('/api/cars', carRoutes);
 app.use('/api/bookings', bookingRoutes);
 
 // --- Serve React Frontend ---
-// const frontendBuildPath = path.join(__dirname, '../frontend/build');
-// app.use(express.static(frontendBuildPath));
+const frontendBuildPath = path.join(__dirname, '../frontend/build');
+app.use(express.static(frontendBuildPath));
 
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(frontendBuildPath, 'index.html'));
-// });
-
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+});
 
 // --- Start Server ---
 const PORT = process.env.PORT || 5000;
