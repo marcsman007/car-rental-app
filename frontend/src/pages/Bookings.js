@@ -4,11 +4,6 @@ import { AppContext } from "../context/AppContext";
 function Bookings() {
   const { userBookings, cancelBooking, loading } = useContext(AppContext);
 
-  if (loading)
-    return <p className="text-center text-gray-600 mt-6">Loading your bookings...</p>;
-  if (userBookings.length === 0)
-    return <p className="text-center text-gray-600 mt-6">You have no bookings yet.</p>;
-
   const handleCancel = async (id) => {
     if (!window.confirm("Cancel this booking?")) return;
     try {
@@ -20,13 +15,17 @@ function Bookings() {
     }
   };
 
-  // Separate active and fulfilled/canceled bookings
-  const activeBookings = userBookings.filter(
-    (b) => b.status !== "canceled" && b.status !== "fulfilled"
-  );
-  const pastBookings = userBookings.filter(
-    (b) => b.status === "canceled" || b.status === "fulfilled"
-  );
+  // Only calculate bookings if loading is false and userBookings exists
+  let activeBookings = [];
+  let pastBookings = [];
+  if (!loading && userBookings !== null) {
+    activeBookings = userBookings.filter(
+      (b) => b.status !== "canceled" && b.status !== "fulfilled"
+    );
+    pastBookings = userBookings.filter(
+      (b) => b.status === "canceled" || b.status === "fulfilled"
+    );
+  }
 
   const renderBookingCard = (b, showCancel = true) => (
     <div
@@ -76,6 +75,32 @@ function Bookings() {
     </div>
   );
 
+  // Render skeleton placeholders to prevent flash
+  if (loading || userBookings === null) {
+    return (
+      <div className="min-h-screen px-4 py-6 bg-gray-100 w-full max-w-[1600px] mx-auto">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">My Bookings</h2>
+        <p className="text-center text-gray-600 mt-6">Loading your bookings...</p>
+
+        {/* Skeletons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-4 border rounded-lg bg-gray-200 animate-pulse h-48 flex flex-col gap-2">
+              <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+              <div className="h-6 bg-gray-300 rounded w-full mt-auto"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Show bookings only after loading is done
+  const showNoBookingsMessage = !loading && userBookings && userBookings.length === 0;
+
   return (
     <div className="min-h-screen px-4 py-6 bg-gray-100 w-full max-w-[1600px] mx-auto">
       <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">My Bookings</h2>
@@ -98,7 +123,7 @@ function Bookings() {
         </>
       )}
 
-      {activeBookings.length === 0 && pastBookings.length === 0 && (
+      {showNoBookingsMessage && (
         <p className="text-center text-gray-600 mt-6">You have no bookings yet.</p>
       )}
     </div>

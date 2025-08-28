@@ -11,6 +11,7 @@ export const AppProvider = ({ children }) => {
 
   const token = localStorage.getItem("token");
 
+  // Decode JWT to get user info
   const parseJwt = (token) => {
     try {
       return JSON.parse(atob(token.split(".")[1]));
@@ -28,6 +29,7 @@ export const AppProvider = ({ children }) => {
 
   const role = user?.role || null;
 
+  // Fetch all cars
   const fetchCars = useCallback(async () => {
     try {
       const res = await API.get("/cars");
@@ -37,18 +39,28 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
+  // Fetch bookings
   const fetchUserBookings = useCallback(async () => {
-    if (role === "user" && token) {
-      try {
-        const res = await API.get("/bookings/mybookings", {
+    if (!token) return;
+
+    try {
+      let res;
+      if (role === "user") {
+        res = await API.get("/bookings/mybookings", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUserBookings(res.data);
-      } catch (err) {
-        console.error("Error fetching bookings:", err);
+      } else if (role === "admin") {
+        res = await API.get("/bookings", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
+      setUserBookings(res.data);
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
     }
   }, [role, token]);
+
+  // --- User actions ---
 
   const bookCar = async (carId, startDate, endDate) => {
     try {
@@ -59,7 +71,13 @@ export const AppProvider = ({ children }) => {
       );
 
       const newBooking = res.data;
+
+      // Update user bookings
       setUserBookings((prev) => [...prev, newBooking]);
+
+      // Remove booked car from available cars
+      setCars((prevCars) => prevCars.filter((car) => car._id !== carId));
+
       return newBooking;
     } catch (err) {
       console.error("Error creating booking:", err);
@@ -73,11 +91,15 @@ export const AppProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      // Update user bookings state
       setUserBookings((prev) =>
         prev.map((b) =>
           b._id === bookingId ? { ...b, status: "canceled", canceledAt: new Date() } : b
         )
       );
+
+      // Refetch cars to update availability
+      await fetchCars();
 
       return res.data;
     } catch (err) {
@@ -97,6 +119,50 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // --- Admin actions ---
+
+  const addCar = async (carData) => {
+    try {
+      const res = await API.post("/cars", carData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCars((prev) => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error("Error adding car:", err);
+      throw err;
+    }
+  };
+
+  const updateCar = async (carId, updatedData) => {
+    try {
+      const res = await API.put(`/cars/${carId}`, updatedData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const updatedCar = res.data;
+      setCars((prev) =>
+        prev.map((c) => (c._id === carId ? { ...c, ...updatedCar } : c))
+      );
+      return updatedCar;
+    } catch (err) {
+      console.error("Error updating car:", err);
+      throw err;
+    }
+  };
+
+  const deleteCar = async (carId) => {
+    try {
+      await API.delete(`/cars/${carId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCars((prev) => prev.filter((c) => c._id !== carId));
+    } catch (err) {
+      console.error("Error deleting car:", err);
+      throw err;
+    }
+  };
+
+  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -121,6 +187,9 @@ export const AppProvider = ({ children }) => {
         bookCar,
         cancelBooking,
         updateBooking,
+        addCar,
+        updateCar,
+        deleteCar,
         role,
         loading,
       }}
