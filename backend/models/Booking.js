@@ -12,7 +12,8 @@ const bookingSchema = new mongoose.Schema({
     default: 'pending' 
   },
   canceledAt: { type: Date },    // optional timestamp
-  fulfilledAt: { type: Date }    // added to track when a booking is fulfilled
+  fulfilledAt: { type: Date },   // added to track when a booking is fulfilled
+  reviewed: { type: Boolean, default: false } // added to track if a review has been submitted
 }, { timestamps: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

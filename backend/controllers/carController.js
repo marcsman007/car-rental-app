@@ -89,7 +89,7 @@ const deleteCar = async (req, res) => {
   }
 };
 
-// --- ADD a review for a car (any logged-in user) ---
+// --- ADD a review for a car (one review per completed booking) ---
 const addCarReview = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -101,17 +101,33 @@ const addCarReview = async (req, res) => {
 
     if (!car) return res.status(404).json({ message: "Car not found" });
 
+    // --- Find a completed booking for this user & car that hasn't been reviewed yet ---
+    const booking = await Booking.findOne({
+      user: req.user._id,
+      car: car._id,
+      status: { $in: ["completed", "fulfilled", "done"] },
+      reviewed: { $ne: true } // must not have been reviewed yet
+    });
+
+    if (!booking) {
+      console.log(
+        `User ${req.user._id} attempted to review car ${car._id} without a completed unreviewed booking`
+      );
+      return res.status(400).json({
+        message: "You can only review after completing a booking that hasn't been reviewed yet"
+      });
+    }
+
     if (!Array.isArray(car.reviews)) car.reviews = [];
 
-    const alreadyReviewed = car.reviews.find(
-      r => r.user.toString() === req.user._id.toString()
-    );
-    if (alreadyReviewed) {
-      return res.status(400).json({ message: "You have already reviewed this car" });
+    // --- Ensure this booking hasn't already been reviewed by checking the booking.reviewed flag ---
+    if (booking.reviewed) {
+      return res.status(400).json({ message: "You have already reviewed this booking" });
     }
 
     const review = {
       user: req.user._id,
+      booking: booking._id, // link review to booking
       name: req.user.name || "Anonymous",
       rating: Number(rating),
       comment: comment || ""
@@ -119,9 +135,15 @@ const addCarReview = async (req, res) => {
 
     car.reviews.push(review);
     car.numReviews = car.reviews.length;
-    car.averageRating = car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length;
+    car.averageRating =
+      car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length;
 
     await car.save();
+
+    // --- Mark this booking as reviewed ---
+    booking.reviewed = true;
+    await booking.save();
+
     console.log("Review added:", review);
 
     res.status(201).json({ message: "Review added", review });

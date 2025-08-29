@@ -7,6 +7,11 @@ const reviewSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+    booking: {  // 🔹 link review to a booking
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Booking',
+      required: true
+    },
     name: { type: String, required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, required: true }
