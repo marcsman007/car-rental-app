@@ -1,13 +1,21 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../context/AppContext";
 
 function Bookings() {
-  const { userBookings, cancelBooking, loading } = useContext(AppContext);
+  const { userBookings, cancelBooking, loading, fetchUserBookings } = useContext(AppContext);
+  const [bookings, setBookings] = useState([]);
+
+  // Keep local state in sync with AppContext bookings
+  useEffect(() => {
+    setBookings(userBookings);
+  }, [userBookings]);
 
   const handleCancel = async (id) => {
     if (!window.confirm("Cancel this booking?")) return;
     try {
       await cancelBooking(id);
+      // Refetch latest bookings to ensure up-to-date info
+      await fetchUserBookings();
       alert("Booking cancelled ✅");
     } catch (err) {
       console.error(err);
@@ -15,14 +23,14 @@ function Bookings() {
     }
   };
 
-  // Only calculate bookings if loading is false and userBookings exists
+  // Only calculate bookings if loading is false and bookings exist
   let activeBookings = [];
   let pastBookings = [];
-  if (!loading && userBookings !== null) {
-    activeBookings = userBookings.filter(
+  if (!loading && bookings !== null) {
+    activeBookings = bookings.filter(
       (b) => b.status !== "canceled" && b.status !== "fulfilled"
     );
-    pastBookings = userBookings.filter(
+    pastBookings = bookings.filter(
       (b) => b.status === "canceled" || b.status === "fulfilled"
     );
   }
@@ -76,7 +84,7 @@ function Bookings() {
   );
 
   // Render skeleton placeholders to prevent flash
-  if (loading || userBookings === null) {
+  if (loading || bookings === null) {
     return (
       <div className="min-h-screen px-4 py-6 bg-gray-100 w-full max-w-[1600px] mx-auto">
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">My Bookings</h2>
@@ -99,7 +107,7 @@ function Bookings() {
   }
 
   // Show bookings only after loading is done
-  const showNoBookingsMessage = !loading && userBookings && userBookings.length === 0;
+  const showNoBookingsMessage = !loading && bookings && bookings.length === 0;
 
   return (
     <div className="min-h-screen px-4 py-6 bg-gray-100 w-full max-w-[1600px] mx-auto">

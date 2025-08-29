@@ -39,6 +39,14 @@ function AdminDashboard() {
   useEffect(() => {
     fetchCars();
     fetchBookings();
+
+    // --- Polling every 10 seconds ---
+    const interval = setInterval(() => {
+      fetchCars();
+      fetchBookings();
+    }, 10000);
+
+    return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
   // --- Booking logic ---
@@ -129,7 +137,12 @@ function AdminDashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const updatedBooking = res.data.booking || res.data;
-      setBookings(bookings.map((b) => (b._id === editingBookingId ? { ...b, ...updatedBooking } : b)));
+
+      // Update bookings state
+      setBookings((prev) =>
+        prev.map((b) => (b._id === editingBookingId ? { ...b, ...updatedBooking } : b))
+      );
+
       setMessage("Booking confirmed ✅");
       setEditingBookingId(null);
     } catch (err) {
@@ -143,7 +156,8 @@ function AdminDashboard() {
     try {
       const res = await API.delete(`/bookings/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       const canceledBooking = res.data.booking;
-      setBookings(bookings.map((b) => (b._id === id ? { ...b, ...canceledBooking } : b)));
+
+      setBookings((prev) => prev.map((b) => (b._id === id ? { ...b, ...canceledBooking } : b)));
       setMessage(res.data.message || "Booking cancelled ✅");
     } catch (err) {
       console.error(err);
@@ -156,7 +170,8 @@ function AdminDashboard() {
     try {
       const res = await API.patch(`/bookings/${id}/fulfill`, {}, { headers: { Authorization: `Bearer ${token}` } });
       const fulfilledBooking = res.data.booking || res.data;
-      setBookings(bookings.map((b) => (b._id === id ? { ...b, ...fulfilledBooking } : b)));
+
+      setBookings((prev) => prev.map((b) => (b._id === id ? { ...b, ...fulfilledBooking } : b)));
       setMessage("Booking fulfilled ✅");
     } catch (err) {
       console.error(err);

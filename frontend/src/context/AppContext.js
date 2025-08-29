@@ -61,7 +61,6 @@ export const AppProvider = ({ children }) => {
   }, [role, token]);
 
   // --- User actions ---
-
   const bookCar = async (carId, startDate, endDate) => {
     try {
       const res = await API.post(
@@ -120,7 +119,6 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Admin actions ---
-
   const addCar = async (carData) => {
     try {
       const res = await API.post("/cars", carData, {
@@ -172,6 +170,17 @@ export const AppProvider = ({ children }) => {
     };
     loadData();
   }, [fetchCars, fetchUserBookings]);
+
+  // --- Poll user bookings every 10 seconds for live updates ---
+  useEffect(() => {
+    if (!token) return;
+
+    const interval = setInterval(() => {
+      fetchUserBookings();
+    }, 10000); // every 10 seconds
+
+    return () => clearInterval(interval); // cleanup on unmount
+  }, [fetchUserBookings, token]);
 
   return (
     <AppContext.Provider

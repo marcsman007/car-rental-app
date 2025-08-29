@@ -1,13 +1,23 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import API from "../services/api";
 
 function Cars() {
-  const { cars, role, userBookings, bookCar, fetchCars, loading, updateBooking } = useContext(AppContext);
+  const { cars, role, userBookings, bookCar, fetchCars, loading, updateBooking } =
+    useContext(AppContext);
   const [bookingCarId, setBookingCarId] = useState(null);
   const [bookingDates, setBookingDates] = useState({ startDate: "", endDate: "" });
   const [message, setMessage] = useState("");
   const [reviewData, setReviewData] = useState({});
+
+  // --- Polling ---
+  useEffect(() => {
+    fetchCars(); // Initial fetch
+    const interval = setInterval(() => {
+      fetchCars();
+    }, 10000); // Every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) return <p className="text-center text-gray-600 mt-6">Loading cars...</p>;
   if (cars.length === 0) return <p className="text-center text-gray-600 mt-6">No cars available</p>;
@@ -31,7 +41,11 @@ function Cars() {
     if (!bookingDates.startDate || !bookingDates.endDate) return;
 
     try {
-      const newBooking = await bookCar(bookingCarId, bookingDates.startDate, bookingDates.endDate);
+      const newBooking = await bookCar(
+        bookingCarId,
+        bookingDates.startDate,
+        bookingDates.endDate
+      );
       setMessage("Booking successful ✅");
       updateBooking(newBooking);
       setBookingCarId(null);
@@ -92,7 +106,13 @@ function Cars() {
           .map((car) => {
             const bookedByUser = isCarBookedByUser(car._id);
             const available = isCarAvailable(car);
-            const userReview = car.reviews?.find((r) => r.user === localStorage.getItem("userId"));
+            const userReview = car.reviews?.find(
+              (r) => r.user === localStorage.getItem("userId")
+            );
+
+            const imageName = `${car.make.toLowerCase().replace(/\s+/g, "-")}-${car.model
+              .toLowerCase()
+              .replace(/\s+/g, "-")}.jpg`;
 
             return (
               <li
@@ -101,6 +121,16 @@ function Cars() {
                   available ? "border-green-400" : "border-red-400 opacity-60"
                 } ${car.averageRating === maxRating && maxRating > 0 ? "bg-yellow-50" : "bg-white"}`}
               >
+                <img
+                  src={`/images/${imageName}`}
+                  alt={`${car.make} ${car.model}`}
+                  className="w-full h-40 object-cover rounded"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/images/default.jpg";
+                  }}
+                />
+
                 <div className="flex flex-col gap-3 w-full">
                   <span className="font-bold text-lg text-gray-800">
                     {car.make} {car.model} | ₱{car.pricePerDay}/day{" "}
@@ -115,11 +145,14 @@ function Cars() {
                     <div className="mt-2 pl-2 text-gray-700">
                       <strong>Reviews:</strong>
                       <ul className="list-disc pl-5">
-                        {car.reviews.map((r) => (
-                          <li key={r._id}>
-                            {r.name} - {r.rating} {renderStars(r.rating)} {r.comment}
-                          </li>
-                        ))}
+                        {car.reviews
+                          .slice(-3)
+                          .reverse()
+                          .map((r) => (
+                            <li key={r._id}>
+                              {r.name} - {r.rating} {renderStars(r.rating)} {r.comment}
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   )}
@@ -182,14 +215,18 @@ function Cars() {
                         max="5"
                         placeholder="Rating (1-5)"
                         value={reviewData[car._id]?.rating || ""}
-                        onChange={(e) => handleReviewChange(car._id, "rating", e.target.value)}
+                        onChange={(e) =>
+                          handleReviewChange(car._id, "rating", e.target.value)
+                        }
                         className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full"
                       />
                       <input
                         type="text"
                         placeholder="Comment"
                         value={reviewData[car._id]?.comment || ""}
-                        onChange={(e) => handleReviewChange(car._id, "comment", e.target.value)}
+                        onChange={(e) =>
+                          handleReviewChange(car._id, "comment", e.target.value)
+                        }
                         className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full"
                       />
                       <button
