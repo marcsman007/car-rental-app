@@ -6,7 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cars from "./pages/Cars";
 import Bookings from "./pages/Bookings";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
 import { AppProvider } from "./context/AppContext";
 
 function App() {
@@ -39,9 +39,17 @@ function App() {
                 }
               />
 
-              {/* Admin only route */}
+              {/* Admin only routes */}
               <Route
                 path="/admin"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminDashboard />

@@ -5,8 +5,9 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const carRoutes = require('./routes/carRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
-const Booking = require('./models/Booking');
+const usersRoutes = require('./routes/usersRoutes'); // <-- Corrected import
 const cors = require('cors');
+const Booking = require('./models/Booking');
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.get('/api/bookings/test', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/users', usersRoutes); // <-- Register users route
 
 // --- Serve React Frontend ---
 const frontendBuildPath = path.join(__dirname, '../frontend/build');
