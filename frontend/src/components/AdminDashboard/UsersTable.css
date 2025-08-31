@@ -1,15 +1,16 @@
 /* src/components/AdminDashboard/UsersTable.css */
 
-/* Highlight new users */
+/* Highlight new or updated users */
 .highlight {
   background-color: #fef3c7; /* light yellow */
-  transition: background-color 2s ease;
+  transition: background-color 0.8s ease; /* smoother and faster fade */
 }
 
 /* Fade out deleted users */
 .fadeOut {
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transform: translateX(-15px); /* subtle slide effect */
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 /* Optional: table styling */
@@ -29,4 +30,9 @@ thead tr {
 
 tbody tr:nth-child(even) {
   background-color: #f9fafb; /* subtle striped effect */
+}
+
+/* Optional: subtle transition on table rows */
+tbody tr {
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }

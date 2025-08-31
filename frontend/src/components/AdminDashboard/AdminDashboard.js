@@ -1,14 +1,16 @@
-// src/components/AdminDashboard/AdminDashboard.js
 import { useEffect, useState, useCallback } from "react";
 import API from "../../services/api";
+import DashboardStats from "./DashboardStats"; 
 import CarsTable from "./CarsTable";
 import BookingsTable from "./BookingsTable";
 import ReviewsSection from "./ReviewsSection";
 import UsersTable from "./UsersTable";
+import Notification from "./common/Notification";
 
 function AdminDashboard() {
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [users, setUsers] = useState([]);
   const [message, setMessage] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -17,6 +19,9 @@ function AdminDashboard() {
   const [editingCarData, setEditingCarData] = useState({});
   const [editingBookingId, setEditingBookingId] = useState(null);
   const [editingBookingDates, setEditingBookingDates] = useState({ startDate: "", endDate: "" });
+
+  // For triggering ReviewsSection refresh
+  const [reviewAdded, setReviewAdded] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -41,16 +46,42 @@ function AdminDashboard() {
     }
   }, [token]);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await API.get("/users", { headers: { Authorization: `Bearer ${token}` } });
+      setUsers(Array.isArray(res.data) ? res.data : res.data.users || []);
+    } catch (err) {
+      console.error(err);
+      setMessage(err.response?.data?.message || "Failed to fetch users ❌");
+    }
+  }, [token]);
+
+  // --- Trigger ReviewsSection Refresh ---
+  const triggerReviewRefresh = () => {
+    setReviewAdded(prev => !prev);
+  };
+
   // --- Initial fetch & interval ---
   useEffect(() => {
     fetchCars();
     fetchBookings();
+    fetchUsers();
+
     const interval = setInterval(() => {
       fetchCars();
       fetchBookings();
+      fetchUsers();
     }, 10000);
+
     return () => clearInterval(interval);
-  }, [fetchCars, fetchBookings]);
+  }, [fetchCars, fetchBookings, fetchUsers]);
+
+  // --- Auto-clear message after 2 seconds ---
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(""), 2000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   // --- Booking logic ---
   const getActiveBooking = (carId) => {
@@ -178,66 +209,80 @@ function AdminDashboard() {
   };
 
   // --- Button Classes ---
-  const btnBase = "px-3 py-1 rounded text-white font-semibold transition-colors duration-200";
+  const btnBase = "px-3 py-1 rounded text-white font-semibold transition-colors duration-200 flex items-center gap-1";
   const btnBlue = `${btnBase} bg-blue-600 hover:bg-blue-700`;
   const btnRed = `${btnBase} bg-red-600 hover:bg-red-700`;
   const btnGray = `${btnBase} bg-gray-400 hover:bg-gray-500`;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-6">
+    <div className="w-full max-w-[1600px] mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold mb-6 text-center">Admin Dashboard</h1>
-      {message && (
-        <p className={`mb-4 text-center ${message.includes('❌') ? 'text-red-600' : 'text-green-600'}`}>
-          {message}
-        </p>
-      )}
 
-      {/* Cars Section */}
-      <CarsTable
+      {/* --- Notifications --- */}
+      <Notification
+        message={message}
+        type={message.includes("❌") ? "error" : "success"}
+      />
+
+      {/* --- Dashboard Stats --- */}
+      <DashboardStats
         cars={cars}
-        editingCarId={editingCarId}
-        setEditingCarId={setEditingCarId}
-        editingCarData={editingCarData}
-        setEditingCarData={setEditingCarData}
-        startEditCar={startEditCar}
-        handleEditCar={handleEditCar}
-        handleDeleteCar={handleDeleteCar}
-        getActiveBooking={getActiveBooking}
-        newCar={newCar}
-        setNewCar={setNewCar}
-        handleAddCar={handleAddCar}
-        btnBlue={btnBlue}
-        btnRed={btnRed}
-        btnGray={btnGray}
-      />
-
-      {/* Bookings Section */}
-      <BookingsTable
         bookings={bookings}
-        editingBookingId={editingBookingId}
-        setEditingBookingId={setEditingBookingId}
-        editingBookingDates={editingBookingDates}
-        setEditingBookingDates={setEditingBookingDates}
-        startEditBooking={startEditBooking}
-        handleEditBooking={handleEditBooking}
-        handleCancelBooking={handleCancelBooking}
-        handleFulfillBooking={handleFulfillBooking}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        btnBlue={btnBlue}
-        btnRed={btnRed}
-        btnGray={btnGray}
+        users={users}
       />
 
-      {/* Reviews Section */}
-      <ReviewsSection />
+      {/* --- Cars Section --- */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <h2 className="text-2xl font-bold mb-4">Cars Management</h2>
+        <CarsTable
+          cars={cars}
+          editingCarId={editingCarId}
+          setEditingCarId={setEditingCarId}
+          editingCarData={editingCarData}
+          setEditingCarData={setEditingCarData}
+          startEditCar={startEditCar}
+          handleEditCar={handleEditCar}
+          handleDeleteCar={handleDeleteCar}
+          getActiveBooking={getActiveBooking}
+          newCar={newCar}
+          setNewCar={setNewCar}
+          handleAddCar={handleAddCar}
+          btnBlue={btnBlue}
+          btnRed={btnRed}
+          btnGray={btnGray}
+        />
+      </div>
 
-      {/* Users Section */}
-      <UsersTable
-        btnBlue={btnBlue}
-        btnRed={btnRed}
-        btnGray={btnGray}
-      />
+      {/* --- Bookings Section --- */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <h2 className="text-2xl font-bold mb-4">Bookings Management</h2>
+        <BookingsTable
+          bookings={bookings}
+          editingBookingId={editingBookingId}
+          setEditingBookingId={setEditingBookingId}
+          editingBookingDates={editingBookingDates}
+          setEditingBookingDates={setEditingBookingDates}
+          startEditBooking={startEditBooking}
+          handleEditBooking={handleEditBooking}
+          handleCancelBooking={handleCancelBooking}
+          handleFulfillBooking={handleFulfillBooking}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          btnBlue={btnBlue}
+          btnRed={btnRed}
+          btnGray={btnGray}
+        />
+      </div>
+
+      {/* --- Users Section --- */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <UsersTable users={users} setUsers={setUsers} btnRed={btnRed} />
+      </div>
+
+      {/* --- Reviews Section --- */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <ReviewsSection reviewAdded={reviewAdded} onReviewAdded={triggerReviewRefresh} />
+      </div>
     </div>
   );
 }

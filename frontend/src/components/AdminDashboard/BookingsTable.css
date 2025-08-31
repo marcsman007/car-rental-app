@@ -1,0 +1,67 @@
+/* src/components/AdminDashboard/BookingsTable.css */
+
+/* Cancelled status badge */
+.status-pill.cancelled {
+  background-color: #f44336; /* red background */
+  color: white;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  display: inline-block;
+}
+
+/* Fulfilled status badge */
+.status-pill.fulfilled {
+  background-color: #4caf50; /* green */
+  color: white;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+/* Confirmed status badge */
+.status-pill.confirmed {
+  background-color: #2196f3; /* blue */
+  color: white;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+/* Pending status badge */
+.status-pill.pending {
+  background-color: #ffeb3b; /* yellow */
+  color: #333;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  display: inline-block;
+}
+
+/* Optional: greyed out text for cancelled rows in actions */
+.row-cancelled {
+  opacity: 0.6;
+}
+
+/* Highlight new or updated bookings */
+.highlight {
+  animation: highlightFade 2s ease;
+  background-color: #fef3c7; /* light yellow */
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: #fef3c7;
+  }
+  100% {
+    background-color: transparent;
+  }
+}

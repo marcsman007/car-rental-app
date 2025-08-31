@@ -1,0 +1,48 @@
+/* ReviewsSection.css */
+
+/* Highlight new or updated reviews */
+.highlight {
+  background-color: #d1fae5; /* soft green */
+  transition: background-color 0.5s ease;
+}
+
+/* Fade out for deleted reviews */
+.fadeOut {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* Table styling */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  border: 1px solid #d1d5db; /* light gray */
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
+th {
+  background-color: #f3f4f6; /* gray-200 */
+  cursor: pointer;
+}
+
+tr:nth-child(even) {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+/* Input and select styling */
+input, select {
+  border: 1px solid #d1d5db;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Pagination spacing (optional if using same Pagination component) */
+.pagination {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
