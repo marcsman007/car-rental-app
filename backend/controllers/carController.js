@@ -42,7 +42,6 @@ const updateCar = async (req, res) => {
     const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    // Prevent changing licensePlate if booked
     const activeBooking = await Booking.findOne({
       car: car._id,
       status: { $in: ["pending", "confirmed"] }
@@ -51,7 +50,6 @@ const updateCar = async (req, res) => {
       return res.status(400).json({ message: "Cannot change license plate while car is booked" });
     }
 
-    // Convert numeric fields
     if (req.body.year !== undefined) req.body.year = Number(req.body.year);
     if (req.body.pricePerDay !== undefined) req.body.pricePerDay = Number(req.body.pricePerDay);
 
@@ -92,60 +90,43 @@ const deleteCar = async (req, res) => {
 // --- ADD a review for a car (one review per completed booking) ---
 const addCarReview = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
+    if (!req.user || !req.user._id) return res.status(401).json({ message: "Not authorized" });
 
     const { rating, comment } = req.body;
     const car = await Car.findById(req.params.id);
-
     if (!car) return res.status(404).json({ message: "Car not found" });
 
-    // --- Find a completed booking for this user & car that hasn't been reviewed yet ---
     const booking = await Booking.findOne({
       user: req.user._id,
       car: car._id,
       status: { $in: ["completed", "fulfilled", "done"] },
-      reviewed: { $ne: true } // must not have been reviewed yet
+      reviewed: { $ne: true }
     });
 
     if (!booking) {
-      console.log(
-        `User ${req.user._id} attempted to review car ${car._id} without a completed unreviewed booking`
-      );
-      return res.status(400).json({
-        message: "You can only review after completing a booking that hasn't been reviewed yet"
-      });
-    }
-
-    if (!Array.isArray(car.reviews)) car.reviews = [];
-
-    // --- Ensure this booking hasn't already been reviewed by checking the booking.reviewed flag ---
-    if (booking.reviewed) {
-      return res.status(400).json({ message: "You have already reviewed this booking" });
+      return res.status(400).json({ message: "You can only review after completing a booking that hasn't been reviewed yet" });
     }
 
     const review = {
       user: req.user._id,
-      booking: booking._id, // link review to booking
+      booking: booking._id,
       name: req.user.name || "Anonymous",
       rating: Number(rating),
-      comment: comment || ""
+      comment: comment || "",
+      reply: "", // Admin reply
+      note: "",  // Internal note
     };
 
     car.reviews.push(review);
     car.numReviews = car.reviews.length;
-    car.averageRating =
-      car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length;
+    car.averageRating = car.reviews.reduce((sum, r) => sum + r.rating, 0) / car.reviews.length;
 
     await car.save();
 
-    // --- Mark this booking as reviewed ---
     booking.reviewed = true;
     await booking.save();
 
     console.log("Review added:", review);
-
     res.status(201).json({ message: "Review added", review });
   } catch (err) {
     console.error("Error adding review:", err);
@@ -153,4 +134,64 @@ const addCarReview = async (req, res) => {
   }
 };
 
-module.exports = { getCars, addCar, updateCar, deleteCar, addCarReview };
+// --- ADD/UPDATE a reply to a review (admin only, once) ---
+const addReviewReply = async (req, res) => {
+  try {
+    const { carId, reviewId } = req.params;
+    const { reply } = req.body;
+
+    if (!reply || reply.trim() === "") return res.status(400).json({ message: "Reply cannot be empty" });
+
+    const car = await Car.findById(carId);
+    if (!car) return res.status(404).json({ message: "Car not found" });
+
+    const review = car.reviews.id(reviewId);
+    if (!review) return res.status(404).json({ message: "Review not found" });
+
+    if (review.reply && review.reply.trim() !== "") {
+      return res.status(400).json({ message: "Reply already exists, cannot reply again" });
+    }
+
+    review.reply = reply.trim();
+    await car.save();
+
+    console.log(`Admin reply saved for review ${reviewId}:`, reply);
+    res.json({ message: "Reply saved ✅", review });
+  } catch (err) {
+    console.error("Error saving review reply:", err);
+    res.status(500).json({ message: "Failed to save reply ❌" });
+  }
+};
+
+// --- ADD/UPDATE internal note for a review (admin only) ---
+const addReviewNote = async (req, res) => {
+  try {
+    const { carId, reviewId } = req.params;
+    const { note } = req.body;
+
+    const car = await Car.findById(carId);
+    if (!car) return res.status(404).json({ message: "Car not found" });
+
+    const review = car.reviews.id(reviewId);
+    if (!review) return res.status(404).json({ message: "Review not found" });
+
+    review.note = note || "";
+    await car.save();
+
+    console.log(`Admin note saved for review ${reviewId}:`, note);
+    res.json({ message: "Note saved ✅", review });
+  } catch (err) {
+    console.error("Error saving review note:", err);
+    res.status(500).json({ message: "Failed to save note ❌" });
+  }
+};
+
+module.exports = { 
+  getCars, 
+  addCar, 
+  updateCar, 
+  deleteCar, 
+  addCarReview, 
+  addReviewReply, 
+  addReviewNote 
+};

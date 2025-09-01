@@ -160,6 +160,21 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // --- Update a review (e.g., admin reply) ---
+  const updateCarReview = (carId, updatedReview) => {
+    setCars((prevCars) =>
+      prevCars.map((car) => {
+        if (car._id === carId) {
+          const updatedReviews = car.reviews.map((r) =>
+            r._id === updatedReview._id ? { ...r, ...updatedReview } : r
+          );
+          return { ...car, reviews: updatedReviews };
+        }
+        return car;
+      })
+    );
+  };
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -201,6 +216,7 @@ export const AppProvider = ({ children }) => {
         deleteCar,
         role,
         loading,
+        updateCarReview, // <-- new function
       }}
     >
       {children}

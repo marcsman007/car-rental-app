@@ -3,8 +3,16 @@ import { AppContext } from "../context/AppContext";
 import API from "../services/api";
 
 function Cars() {
-  const { cars, role, userBookings, bookCar, fetchCars, loading, updateBooking } =
-    useContext(AppContext);
+  const {
+    cars,
+    role,
+    userBookings,
+    bookCar,
+    fetchCars,
+    loading,
+    updateBooking,
+  } = useContext(AppContext);
+
   const [bookingCarId, setBookingCarId] = useState(null);
   const [bookingDates, setBookingDates] = useState({ startDate: "", endDate: "" });
   const [message, setMessage] = useState("");
@@ -107,7 +115,7 @@ function Cars() {
             const bookedByUser = isCarBookedByUser(car._id);
             const available = isCarAvailable(car);
             const userReview = car.reviews?.find(
-              (r) => r.user === localStorage.getItem("userId")
+              (r) => r.user.toString() === localStorage.getItem("userId")
             );
 
             const imageName = `${car.make.toLowerCase().replace(/\s+/g, "-")}-${car.model
@@ -149,8 +157,10 @@ function Cars() {
                           .slice(-3)
                           .reverse()
                           .map((r) => (
-                            <li key={r._id}>
-                              {r.name} - {r.rating} {renderStars(r.rating)} {r.comment}
+                            <li key={r._id} className="mb-2">
+                              <div>
+                                {r.name} - {r.rating} {renderStars(r.rating)} {r.comment}
+                              </div>
                             </li>
                           ))}
                       </ul>

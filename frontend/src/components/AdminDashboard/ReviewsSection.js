@@ -20,61 +20,63 @@ function ReviewsSection({ reviewAdded, onReviewAdded }) {
   const [highlighted, setHighlighted] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState({});
+  const [adminReplies, setAdminReplies] = useState({});
   const [expandedRows, setExpandedRows] = useState([]);
-  const [newReview, setNewReview] = useState({ carId: "", userId: "", rating: 5, comment: "" });
 
   const itemsPerPage = 10;
   const token = localStorage.getItem("token");
 
-  // Auto-clear messages
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 2000);
     return () => clearTimeout(timer);
   }, [message]);
 
-  // Fetch reviews whenever reviewAdded toggles
+  const fetchReviews = async () => {
+    setLoading(true);
+    try {
+      const carsRes = await API.get("/cars", { headers: { Authorization: `Bearer ${token}` } });
+      const usersRes = await API.get("/users", { headers: { Authorization: `Bearer ${token}` } });
+      const allUsers = Array.isArray(usersRes.data) ? usersRes.data : usersRes.data.users || [];
+      setUsers(allUsers);
+
+      const allReviews = carsRes.data.flatMap(car =>
+        (car.reviews || []).map(review => {
+          const user = allUsers.find(u => u._id === review.user);
+          return {
+            ...review,
+            carMake: car.make,
+            carModel: car.model,
+            carId: car._id,
+            user: user || { name: "Unknown", verified: false },
+            note: review.note || "",
+            adminReply: review.adminReply || "", // fixed
+          };
+        })
+      );
+
+      setReviews(allReviews);
+
+      const initialNotes = {};
+      const initialReplies = {};
+      allReviews.forEach(r => {
+        initialNotes[r._id] = r.note || "";
+        initialReplies[r._id] = r.adminReply || "";
+      });
+      setNotes(initialNotes);
+      setAdminReplies(initialReplies);
+
+    } catch (err) {
+      console.error(err);
+      setMessage(err.response?.data?.message || "Failed to fetch reviews ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReviews = async () => {
-      setLoading(true);
-      try {
-        const carsRes = await API.get("/cars", { headers: { Authorization: `Bearer ${token}` } });
-        const usersRes = await API.get("/users", { headers: { Authorization: `Bearer ${token}` } });
-        const allUsers = Array.isArray(usersRes.data) ? usersRes.data : usersRes.data.users || [];
-        setUsers(allUsers);
-
-        const allReviews = carsRes.data.flatMap(car =>
-          (car.reviews || []).map(review => {
-            const user = allUsers.find(u => u._id === review.user);
-            return {
-              ...review,
-              carMake: car.make,
-              carModel: car.model,
-              carId: car._id,
-              user: user || { name: "Unknown", verified: false },
-            };
-          })
-        );
-
-        // Highlight new reviews
-        const newIds = allReviews.map(r => r._id);
-        setHighlighted(newIds);
-        setTimeout(() => setHighlighted([]), 2000);
-
-        setReviews(allReviews);
-
-        // Notify parent refresh happened
-        if (onReviewAdded) onReviewAdded();
-      } catch (err) {
-        console.error(err);
-        setMessage(err.response?.data?.message || "Failed to fetch reviews ❌");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchReviews();
-  }, [token, reviewAdded, onReviewAdded]);
+  }, [token, reviewAdded]);
 
   const handleDeleteReview = async (carId, reviewId) => {
     if (!window.confirm("Delete this review?")) return;
@@ -85,27 +87,6 @@ function ReviewsSection({ reviewAdded, onReviewAdded }) {
     } catch (err) {
       console.error(err);
       setMessage(err.response?.data?.message || "Failed to delete review ❌");
-    }
-  };
-
-  const handleAddReview = async (e) => {
-    e.preventDefault();
-    if (!newReview.carId || !newReview.userId || !newReview.comment) {
-      setMessage("All fields are required ❌");
-      return;
-    }
-    try {
-      await API.post(
-        `/cars/${newReview.carId}/reviews`,
-        { user: newReview.userId, rating: Number(newReview.rating), comment: newReview.comment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessage("Review added ✅");
-      setNewReview({ carId: "", userId: "", rating: 5, comment: "" });
-      if (onReviewAdded) onReviewAdded(); // trigger refresh
-    } catch (err) {
-      console.error(err);
-      setMessage(err.response?.data?.message || "Failed to add review ❌");
     }
   };
 
@@ -178,6 +159,40 @@ function ReviewsSection({ reviewAdded, onReviewAdded }) {
     setNotes(prev => ({ ...prev, [reviewId]: value }));
   };
 
+  const handleReplyChange = (reviewId, value) => {
+    setAdminReplies(prev => ({ ...prev, [reviewId]: value }));
+  };
+
+  const saveNote = async (reviewId, carId) => {
+    try {
+      const noteValue = notes[reviewId] || "";
+      await API.put(`/cars/${carId}/reviews/${reviewId}/note`, { note: noteValue }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotes(prev => ({ ...prev, [reviewId]: noteValue }));
+      setReviews(prev => prev.map(r => r._id === reviewId ? { ...r, note: noteValue } : r));
+      setMessage("Note saved ✅");
+    } catch (err) {
+      console.error(err);
+      setMessage(err.response?.data?.message || "Failed to save note ❌");
+    }
+  };
+
+  const saveReply = async (reviewId, carId) => {
+    try {
+      const replyValue = adminReplies[reviewId] || "";
+      await API.put(`/cars/${carId}/reviews/${reviewId}/reply`, { adminReply: replyValue }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAdminReplies(prev => ({ ...prev, [reviewId]: replyValue }));
+      setReviews(prev => prev.map(r => r._id === reviewId ? { ...r, adminReply: replyValue } : r));
+      setMessage("Reply saved ✅");
+    } catch (err) {
+      console.error(err);
+      setMessage(err.response?.data?.message || "Failed to save reply ❌");
+    }
+  };
+
   if (loading) return <p className="text-center text-gray-600">Loading reviews...</p>;
 
   return (
@@ -185,47 +200,7 @@ function ReviewsSection({ reviewAdded, onReviewAdded }) {
       <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
       <Notification message={message} type={message.includes("❌") ? "error" : "success"} />
 
-      {/* --- Add Review --- */}
-      <form className="mb-4 flex flex-col sm:flex-row gap-2 flex-wrap items-center" onSubmit={handleAddReview}>
-        <select
-          value={newReview.carId}
-          onChange={e => setNewReview(prev => ({ ...prev, carId: e.target.value }))}
-          className="border px-2 py-1 rounded"
-        >
-          <option value="">Select Car</option>
-          {[...new Set(reviews.map(r => ({ id: r.carId, label: `${r.carMake} ${r.carModel}` })))]
-            .map(c => (
-              <option key={c.id} value={c.id}>{c.label}</option>
-          ))}
-        </select>
-        <select
-          value={newReview.userId}
-          onChange={e => setNewReview(prev => ({ ...prev, userId: e.target.value }))}
-          className="border px-2 py-1 rounded"
-        >
-          <option value="">Select User</option>
-          {users.map(u => (
-            <option key={u._id} value={u._id}>{u.name}</option>
-          ))}
-        </select>
-        <select
-          value={newReview.rating}
-          onChange={e => setNewReview(prev => ({ ...prev, rating: e.target.value }))}
-          className="border px-2 py-1 rounded"
-        >
-          {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} ⭐</option>)}
-        </select>
-        <input
-          type="text"
-          placeholder="Comment"
-          value={newReview.comment}
-          onChange={e => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
-          className="border px-2 py-1 rounded flex-1"
-        />
-        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">Add Review</button>
-      </form>
-
-      {/* --- Filters --- */}
+      {/* Filters */}
       <div className="mb-4 flex flex-col sm:flex-row gap-2 sm:items-center flex-wrap">
         <input
           type="text"
@@ -266,86 +241,106 @@ function ReviewsSection({ reviewAdded, onReviewAdded }) {
           value={filterStartDate}
           onChange={e => setFilterStartDate(e.target.value)}
           className="border px-2 py-1 rounded"
-          placeholder="Start Date"
         />
         <input
           type="date"
           value={filterEndDate}
           onChange={e => setFilterEndDate(e.target.value)}
           className="border px-2 py-1 rounded"
-          placeholder="End Date"
         />
       </div>
 
+      {/* Table */}
       {filteredReviews.length === 0 ? (
         <p className="text-center text-gray-600">No reviews found.</p>
       ) : (
         <>
-          <table className="w-full border border-gray-300 rounded">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("carMake")}>
-                  Car {sortField === "carMake" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("user.name")}>
-                  User {sortField === "user.name" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("rating")}>
-                  Rating {sortField === "rating" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("comment")}>
-                  Comment {sortField === "comment" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("createdAt")}>
-                  Date {sortField === "createdAt" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
-                </th>
-                <th className="border px-4 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedReviews.map(r => (
-                <React.Fragment key={r._id}>
-                  <tr className={highlighted.includes(r._id) ? "highlight" : ""}>
-                    <td className="border px-4 py-2">{r.carMake} {r.carModel}</td>
-                    <td className="border px-4 py-2">{r.user?.name}</td>
-                    <td className="border px-4 py-2">
-                      <span className={`px-2 py-1 rounded text-white ${getRatingColor(r.rating)}`}>
-                        {r.rating} ⭐
-                      </span>
-                    </td>
-                    <td className="border px-4 py-2">{r.comment}</td>
-                    <td className="border px-4 py-2">{new Date(r.createdAt).toLocaleDateString()}</td>
-                    <td className="border px-4 py-2">
-                      <button
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded mr-2"
-                        onClick={() => handleDeleteReview(r.carId, r._id)}
-                      >
-                        Delete
-                      </button>
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
-                        onClick={() => toggleRow(r._id)}
-                      >
-                        {expandedRows.includes(r._id) ? "Hide Notes" : "Add Note"}
-                      </button>
-                    </td>
-                  </tr>
-                  {expandedRows.includes(r._id) && (
-                    <tr>
-                      <td colSpan={6} className="border px-4 py-2 bg-gray-50">
-                        <textarea
-                          placeholder="Enter internal notes..."
-                          value={notes[r._id] || ""}
-                          onChange={e => handleNoteChange(r._id, e.target.value)}
-                          className="w-full border rounded px-2 py-1"
-                        />
+          <div className="overflow-x-auto">
+            <table className="w-full border border-gray-300 rounded min-w-[700px]">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("carMake")}>
+                    Car {sortField === "carMake" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("user.name")}>
+                    User {sortField === "user.name" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("rating")}>
+                    Rating {sortField === "rating" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("comment")}>
+                    Comment {sortField === "comment" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th className="border px-4 py-2 cursor-pointer" onClick={() => handleSort("createdAt")}>
+                    Date {sortField === "createdAt" ? (sortOrder === "asc" ? "▲" : "▼") : ""}
+                  </th>
+                  <th className="border px-4 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedReviews.map(r => (
+                  <React.Fragment key={r._id}>
+                    <tr className={highlighted.includes(r._id) ? "highlight" : ""}>
+                      <td className="border px-4 py-2">{r.carMake} {r.carModel}</td>
+                      <td className="border px-4 py-2">{r.user?.name}</td>
+                      <td className="border px-4 py-2">
+                        <span className={`px-2 py-1 rounded text-white ${getRatingColor(r.rating)}`}>
+                          {r.rating} ⭐
+                        </span>
+                      </td>
+                      <td className="border px-4 py-2">{r.comment}</td>
+                      <td className="border px-4 py-2">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td className="border px-4 py-2 whitespace-nowrap">
+                        <button
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded mr-2"
+                          onClick={() => handleDeleteReview(r.carId, r._id)}
+                        >
+                          Delete
+                        </button>
+                        <button
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                          onClick={() => toggleRow(r._id)}
+                        >
+                          {expandedRows.includes(r._id) ? "Hide Details" : "Add Note / Reply"}
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+                    {expandedRows.includes(r._id) && (
+                      <tr>
+                        <td colSpan={6} className="border px-4 py-2 bg-gray-50 space-y-2">
+                          <textarea
+                            placeholder="Enter internal notes..."
+                            value={notes[r._id] || ""}
+                            onChange={e => handleNoteChange(r._id, e.target.value)}
+                            className="w-full border rounded px-2 py-1"
+                          />
+                          <button
+                            className="mt-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                            onClick={() => saveNote(r._id, r.carId)}
+                          >
+                            Save Note
+                          </button>
+
+                          <textarea
+                            placeholder="Enter admin reply to customer..."
+                            value={adminReplies[r._id] || ""}
+                            onChange={e => handleReplyChange(r._id, e.target.value)}
+                            className="w-full border rounded px-2 py-1 mt-2"
+                          />
+                          <button
+                            className="mt-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded"
+                            onClick={() => saveReply(r._id, r.carId)}
+                          >
+                            Save Reply
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <Pagination
             currentPage={currentPage}

@@ -14,7 +14,11 @@ const reviewSchema = new mongoose.Schema(
     },
     name: { type: String, required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
-    comment: { type: String, required: true }
+    comment: { type: String, required: true },
+
+    // ⭐ Admin reply and internal note
+    reply: { type: String, default: "" }, // admin can reply to review
+    note: { type: String, default: "" }   // internal note for admin use
   },
   { timestamps: true }
 );
