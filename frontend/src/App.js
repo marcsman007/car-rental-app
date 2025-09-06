@@ -30,6 +30,15 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Single car detail view */}
+              <Route
+                path="/cars/:id"
+                element={
+                  <ProtectedRoute>
+                    <Cars />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/bookings"
                 element={
