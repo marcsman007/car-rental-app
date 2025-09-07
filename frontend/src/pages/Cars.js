@@ -7,6 +7,7 @@ import API from "../services/api";
 function Cars() {
   const {
     cars,
+    setCars,
     role,
     userBookings,
     bookCar,
@@ -15,19 +16,32 @@ function Cars() {
     updateBooking,
   } = useContext(AppContext);
 
-  const { id } = useParams(); // for single car view
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [bookingCarId, setBookingCarId] = useState(null);
   const [bookingDates, setBookingDates] = useState({ startDate: "", endDate: "" });
   const [message, setMessage] = useState("");
   const [reviewData, setReviewData] = useState({});
+  const [bookedDateRanges, setBookedDateRanges] = useState({});
 
+  // Fetch cars initially and every 10s
   useEffect(() => {
     fetchCars();
     const interval = setInterval(fetchCars, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Prepare booked date ranges for all cars
+  useEffect(() => {
+    const ranges = {};
+    cars.forEach((car) => {
+      ranges[car._id] = (car.bookings || [])
+        .filter((b) => ["pending", "confirmed"].includes(b.status))
+        .map((b) => ({ start: new Date(b.startDate), end: new Date(b.endDate) }));
+    });
+    setBookedDateRanges(ranges);
+  }, [cars]);
 
   if (loading) return <p className="text-center text-gray-600 mt-6">Loading cars...</p>;
   if (cars.length === 0) return <p className="text-center text-gray-600 mt-6">No cars available</p>;
@@ -38,28 +52,33 @@ function Cars() {
   const isCarBookedByUser = (carId) =>
     userBookings.some((booking) => booking.car._id === carId && booking.status === "confirmed");
 
-  const isCarAvailable = (car) => {
-    if (!bookingDates.startDate || !bookingDates.endDate) return car.available;
-    return !userBookings.some(
-      (booking) =>
-        booking.car._id === car._id &&
-        booking.status === "confirmed" &&
-        new Date(bookingDates.startDate) <= new Date(booking.endDate) &&
-        new Date(bookingDates.endDate) >= new Date(booking.startDate)
-    );
+  const isCarAvailableForDates = (car, startDate, endDate) => {
+    if (!startDate || !endDate) return true;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const ranges = bookedDateRanges[car._id] || [];
+    return !ranges.some((r) => r.start <= end && r.end >= start);
   };
 
   const handleBooking = async (e) => {
     e.preventDefault();
     if (!bookingDates.startDate || !bookingDates.endDate) return;
 
+    const carToBook = cars.find(c => c._id === bookingCarId);
+    if (!isCarAvailableForDates(carToBook, bookingDates.startDate, bookingDates.endDate)) {
+      return setMessage("Selected dates are already booked ❌");
+    }
+
     try {
-      const newBooking = await bookCar(
-        bookingCarId,
-        bookingDates.startDate,
-        bookingDates.endDate
-      );
+      const newBooking = await bookCar(bookingCarId, bookingDates.startDate, bookingDates.endDate);
       setMessage("Booking successful ✅");
+
+      setCars((prevCars) =>
+        prevCars.map((c) =>
+          c._id === bookingCarId ? { ...c, bookings: [...(c.bookings || []), newBooking] } : c
+        )
+      );
+
       updateBooking(newBooking);
       setBookingCarId(null);
       setBookingDates({ startDate: "", endDate: "" });
@@ -77,7 +96,7 @@ function Cars() {
 
   const submitReview = async (carId) => {
     try {
-      const { rating, comment } = reviewData[carId];
+      const { rating, comment } = reviewData[carId] || {};
       if (!rating || !comment) return alert("Please provide both rating and comment");
 
       await API.post(
@@ -85,6 +104,7 @@ function Cars() {
         { rating, comment },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
+
       alert("Review submitted ✅");
       setReviewData({ ...reviewData, [carId]: { rating: "", comment: "" } });
       fetchCars();
@@ -107,7 +127,22 @@ function Cars() {
     );
   };
 
-  const maxRating = Math.max(...cars.map((c) => c.averageRating), 0);
+  const maxRating = Math.max(...cars.map((c) => c.averageRating || 0), 0);
+
+  const getBookedDatesForCar = (carId) => {
+    const ranges = bookedDateRanges[carId] || [];
+    const dates = [];
+    ranges.forEach((r) => {
+      let d = new Date(r.start);
+      while (d <= r.end) {
+        dates.push(new Date(d).toISOString().split("T")[0]);
+        d.setDate(d.getDate() + 1);
+      }
+    });
+    return dates;
+  };
+
+  const bookedDatesForCurrentCar = bookingCarId ? getBookedDatesForCar(bookingCarId) : [];
 
   return (
     <div className="min-h-screen px-4 py-6 bg-gray-100 w-full max-w-[1600px] mx-auto">
@@ -116,12 +151,17 @@ function Cars() {
       </h2>
 
       {singleCar ? (
-        // --- Single Car View ---
-        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg flex flex-col md:flex-row gap-6">
+        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg flex flex-col md:flex-row gap-6 relative">
+          {!isCarAvailableForDates(singleCar, bookingDates.startDate, bookingDates.endDate) && (
+            <span className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white rounded">
+              Booked
+            </span>
+          )}
           <img
             src={`/images/${singleCar.make.toLowerCase().replace(/\s+/g, "-")}-${singleCar.model.toLowerCase().replace(/\s+/g, "-")}.jpg`}
             alt={`${singleCar.make} ${singleCar.model}`}
-            className="w-full md:w-1/2 h-80 object-cover rounded-xl border"
+            className="w-full md:w-1/2 h-80 object-cover rounded-xl border cursor-pointer"
+            onClick={() => navigate(`/cars/${singleCar._id}`)}
             onError={(e) => { e.currentTarget.src = "/images/default.jpg"; }}
           />
           <div className="flex flex-col gap-3 md:w-1/2">
@@ -155,15 +195,21 @@ function Cars() {
                 <input
                   type="date"
                   value={bookingDates.startDate}
+                  min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => setBookingDates({ ...bookingDates, startDate: e.target.value })}
-                  className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  className={`p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${
+                    bookedDatesForCurrentCar.includes(bookingDates.startDate) ? "bg-red-100" : ""
+                  }`}
                   required
                 />
                 <input
                   type="date"
                   value={bookingDates.endDate}
+                  min={bookingDates.startDate || new Date().toISOString().split("T")[0]}
                   onChange={(e) => setBookingDates({ ...bookingDates, endDate: e.target.value })}
-                  className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  className={`p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${
+                    bookedDatesForCurrentCar.includes(bookingDates.endDate) ? "bg-red-100" : ""
+                  }`}
                   required
                 />
                 <div className="flex gap-2 flex-wrap mt-2">
@@ -232,106 +278,111 @@ function Cars() {
           </div>
         </div>
       ) : (
-        // --- List View ---
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          {displayCars
-            .filter((car) => role === "admin" || isCarAvailable(car))
-            .map((car) => {
-              const bookedByUser = isCarBookedByUser(car._id);
-              const available = isCarAvailable(car);
-              const userReview = car.reviews?.find(r => r.user.toString() === localStorage.getItem("userId"));
-              const imageName = `${car.make.toLowerCase().replace(/\s+/g, "-")}-${car.model.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+          {displayCars.map((car) => {
+            const bookedByUser = isCarBookedByUser(car._id);
+            const available = isCarAvailableForDates(car, bookingDates.startDate, bookingDates.endDate);
+            const reserved = (bookedDateRanges[car._id] || []).length > 0;
+            const userReview = car.reviews?.find(r => r.user.toString() === localStorage.getItem("userId"));
+            const imageName = `${car.make.toLowerCase().replace(/\s+/g, "-")}-${car.model.toLowerCase().replace(/\s+/g, "-")}.jpg`;
 
-              return (
-                <li
-                  key={car._id}
-                  className={`p-4 rounded-lg shadow border w-full flex flex-col gap-3 ${available ? "border-green-400" : "border-red-400 opacity-60"} ${car.averageRating === maxRating && maxRating > 0 ? "bg-yellow-50" : "bg-white"}`}
-                >
-                  <img
-                    src={`/images/${imageName}`}
-                    alt={`${car.make} ${car.model}`}
-                    className="w-full h-40 object-cover rounded cursor-pointer"
-                    onClick={() => navigate(`/cars/${car._id}`)}
-                    onError={(e) => { e.currentTarget.src = "/images/default.jpg"; }}
-                  />
+            return (
+              <li
+                key={car._id}
+                className={`p-4 rounded-lg shadow border w-full flex flex-col gap-3 ${available ? "border-green-400" : "border-red-400 opacity-60"} ${car.averageRating === maxRating && maxRating > 0 ? "bg-yellow-50" : "bg-white"} relative`}
+              >
+                {(reserved || bookedByUser) && (
+                  <span className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white rounded">
+                    Booked
+                  </span>
+                )}
+                <img
+                  src={`/images/${imageName}`}
+                  alt={`${car.make} ${car.model}`}
+                  className="w-full h-40 object-cover rounded cursor-pointer"
+                  onClick={() => navigate(`/cars/${car._id}`)}
+                  onError={(e) => { e.currentTarget.src = "/images/default.jpg"; }}
+                />
 
-                  <div className="flex flex-col gap-3 w-full">
-                    <span className="font-bold text-lg text-gray-800">
-                      {car.make} {car.model} | ₱{car.pricePerDay}/day {(!available || bookedByUser) && "(Booked)"}
-                    </span>
+                <div className="flex flex-col gap-3 w-full">
+                  <span className="font-bold text-lg text-gray-800">
+                    {car.make} {car.model} | ₱{car.pricePerDay}/day {(!available || bookedByUser) && "(Booked)"}
+                  </span>
 
-                    <div className="text-gray-600">
-                      Avg Rating: {car.averageRating?.toFixed(1)} {renderStars(car.averageRating)}
-                    </div>
+                  <div className="text-gray-600">
+                    Avg Rating: {car.averageRating?.toFixed(1)} {renderStars(car.averageRating)}
+                  </div>
 
-                    {car.reviews?.length > 0 && (
-                      <div className="mt-2 pl-2 text-gray-700">
-                        <strong>Reviews:</strong>
-                        <ul className="list-disc pl-5">
-                          {car.reviews.slice(-3).reverse().map((r) => (
-                            <li key={r._id} className="mb-2">{r.name} - {r.rating} {renderStars(r.rating)} {r.comment}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {car.descriptionPoints?.length > 0 && (
-                      <ul className="list-disc pl-5 text-gray-700 mt-1">
-                        {car.descriptionPoints.map((point, index) => (
-                          <li key={index} className="mb-1">{point}</li>
+                  {car.reviews?.length > 0 && (
+                    <div className="mt-2 pl-2 text-gray-700">
+                      <strong>Reviews:</strong>
+                      <ul className="list-disc pl-5">
+                        {car.reviews.slice(-3).reverse().map((r) => (
+                          <li key={r._id} className="mb-2">{r.name} - {r.rating} {renderStars(r.rating)} {r.comment}</li>
                         ))}
                       </ul>
-                    )}
+                    </div>
+                  )}
 
-                    {role !== "admin" && available && !bookedByUser && (
-                      <button
-                        onClick={() => setBookingCarId(car._id)}
-                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-full"
-                      >
-                        Book Now
-                      </button>
-                    )}
+                  {car.descriptionPoints?.length > 0 && (
+                    <ul className="list-disc pl-5 text-gray-700 mt-1">
+                      {car.descriptionPoints.map((point, index) => (
+                        <li key={index} className="mb-1">{point}</li>
+                      ))}
+                    </ul>
+                  )}
 
-                    {bookingCarId === car._id && (
-                      <form onSubmit={handleBooking} className="flex flex-col gap-2 mt-2 w-full">
-                        <input
-                          type="date"
-                          value={bookingDates.startDate}
-                          onChange={(e) => setBookingDates({ ...bookingDates, startDate: e.target.value })}
-                          className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                          required
-                        />
-                        <input
-                          type="date"
-                          value={bookingDates.endDate}
-                          onChange={(e) => setBookingDates({ ...bookingDates, endDate: e.target.value })}
-                          className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                          required
-                        />
-                        <div className="flex gap-2 flex-wrap mt-2">
-                          <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition w-full md:w-auto">
-                            Confirm Booking
-                          </button>
-                          <button type="button" onClick={() => { setBookingCarId(null); setBookingDates({ startDate: "", endDate: "" }); }} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition w-full md:w-auto">
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
+                  {role !== "admin" && (
+                    <button
+                      onClick={() => setBookingCarId(car._id)}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-full"
+                    >
+                      Book Now
+                    </button>
+                  )}
 
-                    {!userReview && role !== "admin" && (
-                      <div className="flex flex-col gap-2 mt-2 w-full">
-                        <input type="number" min="1" max="5" placeholder="Rating (1-5)" value={reviewData[car._id]?.rating || ""} onChange={(e) => handleReviewChange(car._id, "rating", e.target.value)} className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full" />
-                        <input type="text" placeholder="Comment" value={reviewData[car._id]?.comment || ""} onChange={(e) => handleReviewChange(car._id, "comment", e.target.value)} className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full" />
-                        <button type="button" onClick={() => submitReview(car._id)} className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition w-full">
-                          Submit Review
+                  {bookingCarId === car._id && (
+                    <form onSubmit={handleBooking} className="flex flex-col gap-2 mt-2 w-full">
+                      <input
+                        type="date"
+                        value={bookingDates.startDate}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setBookingDates({ ...bookingDates, startDate: e.target.value })}
+                        className={`p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${bookedDatesForCurrentCar.includes(bookingDates.startDate) ? "bg-red-100" : ""}`}
+                        required
+                      />
+                      <input
+                        type="date"
+                        value={bookingDates.endDate}
+                        min={bookingDates.startDate || new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setBookingDates({ ...bookingDates, endDate: e.target.value })}
+                        className={`p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${bookedDatesForCurrentCar.includes(bookingDates.endDate) ? "bg-red-100" : ""}`}
+                        required
+                      />
+                      <div className="flex gap-2 flex-wrap mt-2">
+                        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition w-full md:w-auto">
+                          Confirm Booking
+                        </button>
+                        <button type="button" onClick={() => { setBookingCarId(null); setBookingDates({ startDate: "", endDate: "" }); }} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition w-full md:w-auto">
+                          Cancel
                         </button>
                       </div>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
+                    </form>
+                  )}
+
+                  {!userReview && role !== "admin" && (
+                    <div className="flex flex-col gap-2 mt-2 w-full">
+                      <input type="number" min="1" max="5" placeholder="Rating (1-5)" value={reviewData[car._id]?.rating || ""} onChange={(e) => handleReviewChange(car._id, "rating", e.target.value)} className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full" />
+                      <input type="text" placeholder="Comment" value={reviewData[car._id]?.comment || ""} onChange={(e) => handleReviewChange(car._id, "comment", e.target.value)} className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full" />
+                      <button type="button" onClick={() => submitReview(car._id)} className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition w-full">
+                        Submit Review
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
