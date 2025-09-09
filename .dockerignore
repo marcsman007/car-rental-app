@@ -3,3 +3,4 @@ npm-debug.log
 .env
 build
 .DS_Store
+.git
