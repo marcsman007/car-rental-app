@@ -1,6 +1,38 @@
+# Dependency folders
 node_modules
 npm-debug.log
+
+# Environment files
 .env
+.env.local
+.env.development
+.env.production
+
+# Build artifacts, logs, and temp
 build
-.DS_Store
+dist
+logs
+*.log
+tmp
+coverage
+uploads
+
+# Source files (frontend)
+src
+public
+tests
+__tests__
+
+# Docker & Git
+Dockerfile
+.dockerignore
 .git
+.gitignore
+
+# System / IDE files
+.DS_Store
+.vscode
+.idea
+
+# Misc
+README.md
