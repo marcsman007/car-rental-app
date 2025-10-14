@@ -149,6 +149,12 @@ http://localhost:3000
 ### Homepage
 ![Homepage](screenshots/Homepage.png)
 
+### Registration Page
+![Registration Page](screenshots/Registration_Page.png)
+
+### Login Page
+![Login Page](screenshots/Login_Page.png)
+
 ### Admin Dashboard
 ![Admin Dashboard](screenshots/Admin_Dashboard.png)
 
