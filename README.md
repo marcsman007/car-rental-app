@@ -29,6 +29,7 @@ This app allows users to browse cars, make bookings, leave reviews, and manage r
 * Authentication: JWT + bcrypt
 * Cloud & DevOps (optional setups):
   * AWS EC2 for hosting backend/frontend
+  * Terraform for infrastructure provisioning
   * S3 for static file storage
   * GitHub Actions CI/CD
   * Dockerized deployment
@@ -108,7 +109,7 @@ NODE_ENV=development
 
 Optional: In the frontend .env file (/frontend/.env), set:
 ```env
-REACT_APP_API_URL=http://localhost:5000
+REACT_APP_API_URL=http://localhost:5000 # for local testing
 ```
 
 4. Run the development servers:
@@ -137,11 +138,67 @@ http://localhost:3000
 
 ---
 
-## 📦 Deployment
+## 🐳 Docker Deployment
 * Dockerized: Build and run containers
-* AWS Setup: Deployed with EC2, ALB, and S3 for static assets
+* AWS Setup: Deployed with EC2, VPC, provisioned via Terraform
 * CI/CD: GitHub Actions automate build and deployment
 
+### Local / AWS Testing with Docker Compose
+1. Update frontend .env if needed:
+```env
+REACT_APP_API_URL=http://localhost:5000 # local testing with Docker
+
+REACT_APP_API_URL=http://<EC2-PUBLIC-IP>:5000 # for AWS deployment with Docker
+```
+
+2. Start containers:
+```bash
+docker-compose up -d --build
+```
+
+3. Access the app:
+* Local: http://localhost
+* AWS EC2: http://<EC2_PUBLIC_IP>/
+** Note: Changing REACT_APP_API_URL requires rebuilding the frontend image.
+
+---
+
+## ☁️ AWS Deployment with Terraform
+
+1. Navigate to Terraform folder:
+```bash
+cd terraform
+```
+
+2. Initialize and apply infrastructure:
+```bash
+terraform init
+terraform validate
+terraform plan # to check which resources will be created
+terraform apply # to provision the infrastructure
+```
+* Creates VPC, Subnets, Security Groups, and EC2 instance.
+
+3. Update .env in backend/ and frontend/ if needed (use EC2 private IP for backend container).
+
+4. Pull Docker images from Docker Hub on EC2:
+```bash
+docker pull mjmacaburas/car-rental-backend:latest
+docker pull mjmacaburas/car-rental-frontend:latest
+docker pull mongo:latest
+```
+
+5. Start containers:
+```bash
+docker-compose up -d
+```
+
+6. Access frontend via public IP:
+```bash
+http://<EC2_PUBLIC_IP>/
+```
+
+7. Ensure Security Groups allow ports 22 (SSH), 80 (HTTP), 5000 (backend).
 ---
 
 ## 🖼️ Screenshots
