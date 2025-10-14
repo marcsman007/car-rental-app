@@ -144,7 +144,19 @@ http://localhost:3000
 
 ---
 
-## 🖼 Screenshots
+## 🖼️ Screenshots
+
+### Homepage
+![Homepage](screenshots/Homepage.png)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/Admin_Dashboard.png)
+
+### Cars Page
+![Cars Page](screenshots/Cars_Page.png)
+
+### Bookings Page
+![Bookings Page](screenshots/Bookings_Page.png)
 
 ---
 
