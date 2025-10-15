@@ -1,25 +1,29 @@
-# Build stage
+# ---------- Build Stage ----------
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy dependency files first (enables smarter caching for npm install)
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
-# Copy source code and build
+# Copy the rest of the app
 COPY . .
+
+# Ensure a clean build
 RUN npm run build
 
-# Production stage
+# ---------- Production Stage ----------
 FROM nginx:alpine
 
-# Copy React build to Nginx html folder
+# Remove default nginx static files
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy the React build output
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy custom Nginx config for SPA routing and API proxy
+# Copy custom nginx config for SPA routing + API proxy
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]
