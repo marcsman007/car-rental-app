@@ -3,14 +3,16 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy dependency files first (enables smarter caching for npm install)
+# Copy dependency files first (for caching)
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install all dependencies (including devDependencies for Tailwind build)
+RUN npm ci
 
 # Copy the rest of the app
 COPY . .
 
-# Ensure a clean build
+# Build the React app
 RUN npm run build
 
 # ---------- Production Stage ----------
