@@ -17,7 +17,7 @@ function Navbar() {
     <nav className="bg-black text-orange-500 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between flex-wrap relative">
       {/* Logo / Title */}
       <h2 className="flex items-center flex-wrap sm:flex-nowrap text-4xl font-bold mb-3 sm:mb-0">
-        <span className="align-middle translate-y-4 whitespace-nowrap">Caruma Rental</span>
+        <span className="align-middle translate-y-4 whitespace-nowrap">Grace Car Rental</span>
         <span className="ml-2 flex text-[3rem] sm:text-[7rem] leading-none">
           <span className="inline-block -mr-1">›</span>
           <span className="inline-block -mr-1">›</span>
