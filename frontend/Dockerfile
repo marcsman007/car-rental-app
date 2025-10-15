@@ -1,31 +1,25 @@
-# ---------- Build Stage ----------
+# Build stage
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy dependency files first (for caching)
+# Copy package files and install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install all dependencies (including devDependencies for Tailwind build)
-RUN npm ci
-
-# Copy the rest of the app
+# Copy source code and build
 COPY . .
-
-# Build the React app
 RUN npm run build
 
-# ---------- Production Stage ----------
+# Production stage
 FROM nginx:alpine
 
-# Remove default nginx static files
-RUN rm -rf /usr/share/nginx/html/*
-
-# Copy the React build output
+# Copy React build to Nginx html folder
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy custom nginx config for SPA routing + API proxy
+# Copy custom Nginx config for SPA routing and API proxy
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
