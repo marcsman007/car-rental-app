@@ -1,4 +1,4 @@
-name: CI/CD Deployment
+name: Deploy to EC2
 
 on:
   push:
@@ -10,50 +10,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🧩 Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: 🔑 Set up SSH
-        uses: webfactory/ssh-agent@v0.7.0
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.10
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "======================================"
+            echo "🚀 Starting CI/CD Deployment on EC2..."
+            echo "======================================"
 
-      - name: 🚀 Deploy to EC2 and Rebuild App
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          set -e
-          echo "======================================"
-          echo "🚀 Starting CI/CD Deployment on EC2..."
-          echo "======================================"
+            cd ~/car-rental-app || git clone https://github.com/marcsman007/car-rental-app.git && cd car-rental-app
 
-          cd /home/ubuntu/car-rental-app
+            echo "🔄 Pulling latest code from GitHub..."
+            git fetch origin main
+            git reset --hard origin/main
 
-          echo "🔄 Pulling latest code from GitHub..."
-          git fetch origin main
-          git reset --hard origin/main
+            echo "⚙️ Ensuring required packages are installed..."
+            if ! command -v npm &> /dev/null; then
+              echo "Installing Node.js and npm..."
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
 
-          echo "⚙️ Rebuilding frontend from source..."
-          cd frontend
-          rm -rf build node_modules
-          npm install
-          npm run build
-          cd ..
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
+              sudo systemctl enable docker
+              sudo systemctl start docker
+            fi
 
-          echo "🔐 Generating backend .env file..."
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > backend/.env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
-          echo "ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}" >> backend/.env
-          echo "NODE_ENV=production" >> backend/.env
+            echo "🧹 Cleaning old Docker containers..."
+            sudo docker compose down || true
 
-          echo "🧹 Cleaning up Docker..."
-          sudo docker-compose down -v || true
-          sudo docker system prune -a --volumes -f || true
+            echo "📦 Rebuilding Docker images..."
+            sudo docker compose build --no-cache
 
-          echo "🏗️ Building fresh Docker images..."
-          sudo docker-compose build --no-cache
+            echo "🚀 Starting containers..."
+            sudo docker compose up -d
 
-          echo "🌍 Starting containers..."
-          sudo docker-compose up -d
-
-          echo "✅ Deployment complete! App is live."
-          EOF
+            echo "✅ Deployment complete!"
