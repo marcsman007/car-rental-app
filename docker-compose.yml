@@ -2,10 +2,10 @@ version: "3.9"
 
 services:
   backend:
-##    build:
-##      context: ./backend
-##      dockerfile: Dockerfile
-    image: mjmacaburas/car-rental-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+##    image: mjmacaburas/car-rental-backend:latest
     environment:
       MONGO_URI: mongodb://mongodb:27017/car_rental
       JWT_SECRET: your_jwt_secret
@@ -16,10 +16,10 @@ services:
       - mongodb
 
   frontend:
-##    build:
-##      context: ./frontend
-##      dockerfile: Dockerfile
-    image: mjmacaburas/car-rental-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+##    image: mjmacaburas/car-rental-frontend:latest
     environment:
       - REACT_APP_API_URL=http://backend:5000
     ports:
