@@ -1,55 +1,35 @@
-name: CI/CD Deployment
+- name: Deploy to EC2 and Restart App (Full Rebuild)
+  run: |
+    ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+    set -e
+    cd /home/ubuntu/car-rental-app
 
-on:
-  push:
-    branches:
-      - main
+    echo "🔄 Pulling latest code..."
+    git fetch origin main
+    git reset --hard origin/main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+    echo "⚙️ Rebuilding frontend from source..."
+    cd frontend
+    rm -rf build node_modules
+    npm install
+    npm run build
+    cd ..
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    echo "🔐 Updating backend environment..."
+    echo "MONGO_URI=${{ secrets.MONGO_URI }}" > backend/.env
+    echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
+    echo "ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}" >> backend/.env
+    echo "NODE_ENV=production" >> backend/.env
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+    echo "🧹 Cleaning Docker cache and volumes..."
+    sudo docker-compose down -v
+    sudo docker system prune -a --volumes -f
 
-      - name: Deploy to EC2 and Restart App (Full Rebuild)
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          set -e
-          cd /home/ubuntu/car-rental-app
+    echo "🚀 Building fresh Docker images..."
+    sudo docker-compose build --no-cache
 
-          echo "🔄 Pulling latest code..."
-          git fetch origin main
-          git reset --hard origin/main
+    echo "🌍 Starting containers..."
+    sudo docker-compose up -d
 
-          echo "⚙️ Rebuilding frontend from source..."
-          cd frontend
-          sudo rm -rf build node_modules
-          sudo npm install
-          sudo npm run build
-          cd ..
-
-          echo "🔐 Updating backend environment..."
-          echo "MONGO_URI=${{ secrets.MONGO_URI }}" > backend/.env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> backend/.env
-          echo "ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}" >> backend/.env
-          echo "NODE_ENV=production" >> backend/.env
-
-          echo "🧹 Cleaning Docker cache and volumes..."
-          sudo docker-compose down -v
-          sudo docker system prune -a --volumes -f
-
-          echo "🚀 Building fresh Docker images..."
-          sudo docker-compose build --no-cache
-
-          echo "🌍 Starting containers..."
-          sudo docker-compose up -d
-
-          echo "✅ Deployment complete!"
-          EOF
+    echo "✅ Deployment complete!"
+    EOF
